@@ -29,6 +29,7 @@ public strictfp class ArchonRobot extends Robot {
     public void updateWeights() throws GameActionException {
         updateMinerWeight();
         updateSoldierWeight();
+        updateBuilderWeight();
     }
 
     public void updateMinerWeight() throws GameActionException {
@@ -53,6 +54,12 @@ public strictfp class ArchonRobot extends Robot {
         soldierWeight += BASE_SOLDIER_WEIGHT + bonus;
     }
 
+    private static final double BASE_BUILDER_WEIGHT = 0;
+    
+    public void updateBuilderWeight() throws GameActionException {
+        builderWeight += BASE_BUILDER_WEIGHT;
+    }
+
     public boolean tryBuild() throws GameActionException {
         RobotType type = RobotType.MINER;
         double weight = minerWeight;
@@ -62,6 +69,11 @@ public strictfp class ArchonRobot extends Robot {
             type = RobotType.SOLDIER;
         }
 
+        if (builderWeight > weight) {
+            weight = builderWeight;
+            type = RobotType.BUILDER;
+        }
+
         if (tryBuild(type)) {
             switch (type) {
                 case MINER:
@@ -69,6 +81,9 @@ public strictfp class ArchonRobot extends Robot {
                     break;
                 case SOLDIER:
                     soldierWeight *= WEIGHT_DECAY;
+                    break;
+                case BUILDER:
+                    builderWeight *= WEIGHT_DECAY;
                     break;
             }
             return true;
