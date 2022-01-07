@@ -6,6 +6,7 @@ public strictfp class ArchonRobot extends Robot {
 
     private double minerWeight;
     private double soldierWeight;
+    private double builderWeight;
 
     private static final double WEIGHT_DECAY = 0.8;
 
@@ -13,6 +14,7 @@ public strictfp class ArchonRobot extends Robot {
         super(rc);
         minerWeight = 1;
         soldierWeight = 0;
+        builderWeight = 0;
     }
 
     @Override
