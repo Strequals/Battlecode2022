@@ -62,6 +62,9 @@
 #
 ##############################################################################
 
+# Set JAVA_HOME to Java 8
+JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk/"
+
 # Attempt to set APP_HOME
 
 # Resolve links: $0 may be a link
