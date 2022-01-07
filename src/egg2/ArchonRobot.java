@@ -56,7 +56,7 @@ public strictfp class ArchonRobot extends Robot {
         soldierWeight += BASE_SOLDIER_WEIGHT + bonus;
     }
 
-    private static final double BASE_BUILDER_WEIGHT = 0;
+    private static final double BASE_BUILDER_WEIGHT = 0.4;
     
     public void updateBuilderWeight() throws GameActionException {
         builderWeight += BASE_BUILDER_WEIGHT;
