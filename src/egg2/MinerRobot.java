@@ -97,18 +97,18 @@ public strictfp class MinerRobot extends Robot {
         }
         return mined;
     }
-
+    
     public boolean tryMineLead() throws GameActionException {
         MapLocation me = rc.getLocation();
         boolean mined = false;
         MapLocation mineLocation;
-        while (rc.canMineLead(me)) {
+        while (rc.senseLead(me) > 1) {
             rc.mineLead(me);
             mined = true;
         }
         for (Direction d : directions) {
             mineLocation = me.add(d);
-            while (rc.canMineLead(mineLocation)) {
+            while (rc.senseLead(mineLocation) > 1) {
                 rc.mineLead(mineLocation);
                 mined = true;
             }
@@ -121,6 +121,7 @@ public strictfp class MinerRobot extends Robot {
      **/
     public boolean tryMove() throws GameActionException {
         findResources();
+        rc.setIndicatorString("location: " + resourceLocation + ", score: " + locationScore);
         if (!rc.getLocation().equals(resourceLocation)) {
             Direction d = null;
             if (rc.getLocation().distanceSquaredTo(resourceLocation) > 2) {
@@ -242,11 +243,11 @@ public strictfp class MinerRobot extends Robot {
 
         if (best == null) {
             for (MapLocation l : rc.senseNearbyLocationsWithLead(rc.getType().visionRadiusSquared)) {
-                lead = rc.senseLead(l);
+                lead = rc.senseLead(l) - 1;
                 dsq = current.distanceSquaredTo(l);
                 totalLead += lead;
-                if (dsq < bestDsq
-                        || (dsq == bestDsq && lead > bestScore)) {
+                if (lead > 0 && (dsq < bestDsq
+                        || (dsq == bestDsq && lead > bestScore))) {
                     best = l;
                     bestDsq = dsq;
                     bestScore = lead;
