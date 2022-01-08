@@ -12,6 +12,9 @@ public strictfp class BuilderRobot extends Robot {
         BUILDING
     }
     private static final double SEED_WEIGHT = 0.7;
+    private static final int MAX_IDLE_SEED = 10;
+    private static final int BUILD_THRESHOLD = 500;
+    private static final int TOWER_COOLDOWN = 4;
 
     private State currentState;
     public BuilderRobot(RobotController rc) {
@@ -30,6 +33,8 @@ public strictfp class BuilderRobot extends Robot {
         currentState = state;
     }
 
+
+    private static double towers = 0;
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
@@ -51,10 +56,10 @@ public strictfp class BuilderRobot extends Robot {
             rc.disintegrate();
         }
 
-        tryMove();
+        trySeedMove();
     }
 
-    public boolean tryMove() throws GameActionException {
+    public boolean trySeedMove() throws GameActionException {
         seedLocation = findSeedLocation();
         Direction d = Navigation.navigate(rc, rc.getLocation(), seedLocation);
         if (d != null && rc.canMove(d)) {
@@ -64,6 +69,7 @@ public strictfp class BuilderRobot extends Robot {
         return false;
     }
 
+    private int idleTurns = 0;
     public MapLocation findSeedLocation() throws GameActionException {
         MapLocation current = rc.getLocation();
         MapLocation check;
@@ -79,9 +85,46 @@ public strictfp class BuilderRobot extends Robot {
                 }
             }
         }
-
+        idleTurns++;
+        /*
+        if(idleTurns > MAX_IDLE_SEED) {
+            currentState = State.BUILDING;
+        }
+        */
         return getRandomLocationWithinChebyshevDistance(6);
+    }
 
+    /*
+    *  returns true on success, false otherwise
+    */
+    public boolean tryBuild() throws GameActionException {
+        if(towerCooldown > 0) {
+            towerCooldown--;
+        }
+
+        if(rc.getTeamLeadAmount() < BUILD_THRESHOLD) {
+            return false;
+        }
+
+        if(Communications.readTotalEnemies() > TOWER_THRESHOLD && towerCooldown == 0) {
+            if(tryBuild(RobotType.WATCHTOWER)) {
+                towerCooldown = TOWER_COOLDOWN;
+                return true;
+            }
+        }
+        else {
+            return tryBuild(RobotType.LABORATORY);
+        }
+    }
+
+    public boolean tryBuild(RobotType type) throws GameActionException {
+
+    }
+
+    /*
+    *  searches for a spot on odd x and y, not next to any archon
+    */
+    public MapLocation findBuildSpot() throws GameActionException {
 
     }
 }
