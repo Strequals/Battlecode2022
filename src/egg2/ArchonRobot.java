@@ -13,7 +13,7 @@ public strictfp class ArchonRobot extends Robot {
     public ArchonRobot(RobotController rc) {
         super(rc);
         minerWeight = 1;
-        soldierWeight = 0;
+        soldierWeight = -8;
         builderWeight = 0;
     }
 
@@ -31,9 +31,9 @@ public strictfp class ArchonRobot extends Robot {
         processAndBroadcastEnemies(nearbyRobots);
     }
 
-    private static final double RESOURCE_WEIGHT = 0.01;
+    private static final double RESOURCE_WEIGHT = 0.00005;
     private static final double BASE_MINER_WEIGHT = 0.4;
-    private static final double MAX_RESOURCE_BONUS = 0.2;
+    private static final double MAX_RESOURCE_BONUS = 0.4;
 
     public void updateWeights() throws GameActionException {
         double totalResources = Communications.readTotalResources(rc);
