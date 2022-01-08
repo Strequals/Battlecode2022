@@ -1,5 +1,7 @@
 package egg2;
 
+import battlecode.common.*;
+
 public strictfp class StringSet {
     String string;
 

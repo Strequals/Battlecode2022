@@ -4,21 +4,25 @@ import battlecode.common.*;
 import java.util.Random;
 
 public strictfp class BuilderRobot extends Robot {
+
+    MapLocation seedLocation;
+
     public enum State {
         SEEDING,
         BUILDING
     }
-    private static final SEED_WEIGHT = 0.7;
+    private static final double SEED_WEIGHT = 0.7;
 
     private State currentState;
     public BuilderRobot(RobotController rc) {
         super(rc);
-        if(Random.random() < SEED_WEIGHT) {
+        /*if(Random.random() < SEED_WEIGHT) {
             currentState = SEEDING;
         }
         else {
             currentState = BUILDING;
-        }
+        }*/
+        currentState = State.SEEDING;
     }
 
     public BuilderRobot(RobotController rc, State state) {
@@ -30,12 +34,16 @@ public strictfp class BuilderRobot extends Robot {
     public void run() throws GameActionException {
         processNearbyRobots();
 
-        if(currentState = State.SEEDING) {
+        if(currentState == State.SEEDING) {
             seed();
         }
     }
-
-    private String checked;
+    
+    RobotInfo[] nearbyRobots;
+    public void processNearbyRobots() throws GameActionException {
+        nearbyRobots = rc.senseNearbyRobots();
+        processAndBroadcastEnemies(nearbyRobots);
+    }
 
     public void seed() throws GameActionException {
         MapLocation loc = rc.getLocation();
@@ -43,25 +51,37 @@ public strictfp class BuilderRobot extends Robot {
             rc.disintegrate();
         }
 
+        tryMove();
+    }
+
+    public boolean tryMove() throws GameActionException {
+        seedLocation = findSeedLocation();
+        Direction d = Navigation.navigate(rc, rc.getLocation(), seedLocation);
+        if (rc.canMove(d)) {
+            rc.move(d);
+            return true;
+        }
+        return false;
+    }
+
+    public MapLocation findSeedLocation() throws GameActionException {
+        MapLocation current = rc.getLocation();
+        MapLocation check;
         // find nearest empty spot in vision
         // inefficient, but hopefully doesnt matter
         for(int i = 1; i < 7; i++) {
             for(int j = 0; j < i; j++) {
                 for(int k = 0; k < (i - j); k++) {
-                    MapLocation check = new MapLocation(loc.x + j, loc.y + k);
-                    if(check.distanceSquaredTo(loc) <= 20 && rc.senseLead(check == 0)) {
-                        if(rc.isMovementReady()) {
-                            rc.move(Navigate.navigate(rc, loc, check));
-                        }
-                        return;
+                    check = new MapLocation(current.x + j, current.y + k);
+                    if(rc.canSenseLocation(check) && rc.senseLead(check) == 0) {
+                        return check;
                     }
                 }
             }
         }
 
-        // otherwise wander
-        if(rc.isMovementReady()) {
-            rc.wander();
-        }
+        return getRandomLocationWithinChebyshevDistance(6);
+
+
     }
 }

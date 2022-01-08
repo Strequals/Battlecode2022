@@ -12,11 +12,6 @@ public strictfp class Navigation {
     private static MapLocation previous = null;
     private static int turnsWaited = 0;
     private static final int WAIT_TURNS = 8;
-    private static final Direction[] directions = [Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST]
-
-    public static Direction wander() {
-        return directions[(int)(Random.random() * 8)];
-    }
 
     public static Direction navigate(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
         return navigateFuzzy(rc, from, to);

@@ -32,6 +32,17 @@ public strictfp abstract class Robot {
                 rng.nextInt(rc.getMapHeight()));
     }
 
+    public MapLocation getRandomLocationWithinChebyshevDistance(int dist) {
+        MapLocation current = rc.getLocation();
+        int x = rng.nextInt(2 * dist + 1) - dist + current.x;
+        int y = rng.nextInt(2 * dist + 1) - dist + current.y;
+        if (x < 0) x = 0;
+        if (x >= rc.getMapWidth()) x = rc.getMapWidth() - 1;
+        if (y < 0) y = 0;
+        if (y >= rc.getMapHeight()) y = rc.getMapHeight() - 1;
+        return new MapLocation(x, y);
+    }
+
     public static int getChebyshevDistance(MapLocation l1, MapLocation l2) {
         int dx = l1.x - l2.x;
         int dy = l1.y - l2.y;
