@@ -119,4 +119,52 @@ public strictfp abstract class Robot {
             Communications.addEnemyData(rc, rc.getLocation(), 0);
         }
     }
+
+    public Resource senseAllNearbyResources() throws GameActionException {
+        int lead;
+        int gold;
+        int dsq;
+        MapLocation best = null;
+        int bestDsq = Integer.MAX_VALUE;
+        int bestScore = Integer.MIN_VALUE;
+        MapLocation current = rc.getLocation();
+        int totalLead = 0;
+        int totalGold = 0;
+        for (MapLocation l : rc.senseNearbyLocationsWithGold(rc.getType().visionRadiusSquared)) {
+            gold = rc.senseGold(l);
+            dsq = current.distanceSquaredTo(l);
+            totalGold += gold;
+            if (dsq < bestDsq
+                    || (dsq == bestDsq && gold > bestScore)) {
+                best = l;
+                bestDsq = dsq;
+                bestScore = gold;
+            }
+        }
+
+        if (best == null) {
+            for (MapLocation l : rc.senseNearbyLocationsWithLead(rc.getType().visionRadiusSquared)) {
+                lead = rc.senseLead(l) - 1;
+                dsq = current.distanceSquaredTo(l);
+                totalLead += lead;
+                if (lead > 0 && (dsq < bestDsq
+                        || (dsq == bestDsq && lead > bestScore))) {
+                    best = l;
+                    bestDsq = dsq;
+                    bestScore = lead;
+                }
+            }
+        }
+        if (best != null) {
+            return new Resource(best, totalLead, totalGold);
+        }
+        return null;
+    }
+
+    public void broadcastNearbyResources() throws GameActionException {
+        Resource r = senseAllNearbyResources();
+        if (r != null) {
+            Communications.addResourceData(rc, rc.getLocation(), r.value);
+        }
+    }
 }

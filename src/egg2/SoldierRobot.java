@@ -18,6 +18,7 @@ public strictfp class SoldierRobot extends Robot {
     public void run() throws GameActionException {
         
         processNearbyRobots();
+        broadcastNearbyResources();
         
         boolean moved = tryMove();
         boolean attacked = tryAttack();

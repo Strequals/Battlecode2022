@@ -57,7 +57,7 @@ public strictfp class BuilderRobot extends Robot {
     public boolean tryMove() throws GameActionException {
         seedLocation = findSeedLocation();
         Direction d = Navigation.navigate(rc, rc.getLocation(), seedLocation);
-        if (rc.canMove(d)) {
+        if (d != null && rc.canMove(d)) {
             rc.move(d);
             return true;
         }

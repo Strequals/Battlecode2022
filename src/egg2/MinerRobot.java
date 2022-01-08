@@ -102,15 +102,17 @@ public strictfp class MinerRobot extends Robot {
         MapLocation me = rc.getLocation();
         boolean mined = false;
         MapLocation mineLocation;
-        while (rc.senseLead(me) > 1) {
+        while (rc.isActionReady() && rc.senseLead(me) > 1) {
             rc.mineLead(me);
             mined = true;
         }
         for (Direction d : directions) {
             mineLocation = me.add(d);
-            while (rc.senseLead(mineLocation) > 1) {
-                rc.mineLead(mineLocation);
-                mined = true;
+            if (rc.onTheMap(mineLocation)) {
+                while (rc.isActionReady() && rc.senseLead(mineLocation) > 1) {
+                    rc.mineLead(mineLocation);
+                    mined = true;
+                }
             }
         }
         return mined;
@@ -218,45 +220,4 @@ public strictfp class MinerRobot extends Robot {
         }
         return null;
     }*/
-
-    public Resource senseAllNearbyResources() throws GameActionException {
-        int lead;
-        int gold;
-        int dsq;
-        MapLocation best = null;
-        int bestDsq = Integer.MAX_VALUE;
-        int bestScore = Integer.MIN_VALUE;
-        MapLocation current = rc.getLocation();
-        int totalLead = 0;
-        int totalGold = 0;
-        for (MapLocation l : rc.senseNearbyLocationsWithGold(rc.getType().visionRadiusSquared)) {
-            gold = rc.senseGold(l);
-            dsq = current.distanceSquaredTo(l);
-            totalGold += gold;
-            if (dsq < bestDsq
-                    || (dsq == bestDsq && gold > bestScore)) {
-                best = l;
-                bestDsq = dsq;
-                bestScore = gold;
-            }
-        }
-
-        if (best == null) {
-            for (MapLocation l : rc.senseNearbyLocationsWithLead(rc.getType().visionRadiusSquared)) {
-                lead = rc.senseLead(l) - 1;
-                dsq = current.distanceSquaredTo(l);
-                totalLead += lead;
-                if (lead > 0 && (dsq < bestDsq
-                        || (dsq == bestDsq && lead > bestScore))) {
-                    best = l;
-                    bestDsq = dsq;
-                    bestScore = lead;
-                }
-            }
-        }
-        if (best != null) {
-            return new Resource(best, totalLead, totalGold);
-        }
-        return null;
-    }
 }

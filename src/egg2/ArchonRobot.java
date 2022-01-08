@@ -19,24 +19,33 @@ public strictfp class ArchonRobot extends Robot {
 
     @Override
     public void run() throws GameActionException {
+        processNearbyRobots();
+        broadcastNearbyResources();
         updateWeights();
-
         tryBuild();
     }
 
-    private static final double RESOURCE_WEIGHT = 0.001;
-    private static final double BASE_MINER_WEIGHT = 0.4;
-    private static final double MAX_RESOURCE_BONUS = 0.5;
-
-    public void updateWeights() throws GameActionException {
-        updateMinerWeight();
-        updateSoldierWeight();
-        updateBuilderWeight();
+    RobotInfo[] nearbyRobots;
+    public void processNearbyRobots() throws GameActionException {
+        nearbyRobots = rc.senseNearbyRobots();
+        processAndBroadcastEnemies(nearbyRobots);
     }
 
-    public void updateMinerWeight() throws GameActionException {
+    private static final double RESOURCE_WEIGHT = 0.01;
+    private static final double BASE_MINER_WEIGHT = 0.4;
+    private static final double MAX_RESOURCE_BONUS = 0.2;
+
+    public void updateWeights() throws GameActionException {
         double totalResources = Communications.readTotalResources(rc);
-        double bonus = RESOURCE_WEIGHT * BASE_MINER_WEIGHT;
+        double totalEnemies = Communications.readTotalEnemies(rc);
+        updateMinerWeight(totalResources);
+        updateSoldierWeight(totalEnemies);
+        updateBuilderWeight(totalResources);
+        rc.setIndicatorString("resources: " + totalResources + ", enemies: " + totalEnemies + ", miner: " + minerWeight + ", soldier: " + soldierWeight + ", builder: " + builderWeight);
+    }
+
+    public void updateMinerWeight(double totalResources) throws GameActionException {
+        double bonus = RESOURCE_WEIGHT * totalResources;
         if (bonus > MAX_RESOURCE_BONUS) {
             bonus = MAX_RESOURCE_BONUS;
         }
@@ -45,21 +54,26 @@ public strictfp class ArchonRobot extends Robot {
 
     private static final double ENEMY_WEIGHT = 0.05;
     private static final double BASE_SOLDIER_WEIGHT = 0.6;
-    private static final double MAX_ENEMIES_BONUS = 1;
+    private static final double MAX_ENEMIES_BONUS = 2;
 
-    public void updateSoldierWeight() throws GameActionException {
-        double totalEnemies = Communications.readTotalEnemies(rc);
+    public void updateSoldierWeight(double totalEnemies) throws GameActionException {
         double bonus = ENEMY_WEIGHT * totalEnemies;
         if (bonus > MAX_ENEMIES_BONUS) {
             bonus = MAX_ENEMIES_BONUS;
         }
         soldierWeight += BASE_SOLDIER_WEIGHT + bonus;
     }
-
-    private static final double BASE_BUILDER_WEIGHT = 0.4;
     
-    public void updateBuilderWeight() throws GameActionException {
-        builderWeight += BASE_BUILDER_WEIGHT;
+    private static final double RESOURCE_PENALTY = 0.0001;
+    private static final double BASE_BUILDER_WEIGHT = 0.4;
+    private static final double MAX_RESOURCE_PENALTY = 0.38;
+    
+    public void updateBuilderWeight(double totalResources) throws GameActionException {
+        double penalty = RESOURCE_PENALTY * totalResources;
+        if (penalty > MAX_RESOURCE_PENALTY) {
+            penalty = MAX_RESOURCE_PENALTY;
+        }
+        builderWeight += BASE_BUILDER_WEIGHT - penalty;
     }
 
     public boolean tryBuild() throws GameActionException {
