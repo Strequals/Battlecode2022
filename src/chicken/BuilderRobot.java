@@ -1,4 +1,4 @@
-package egg3;
+package chicken;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -6,6 +6,9 @@ import java.util.Random;
 public strictfp class BuilderRobot extends Robot {
 
     MapLocation targetLocation;
+    double locationScore;
+    static final double SCORE_DECAY = 0.8;
+    static final double CHANGE_TARGET_THRESHOLD = 0.1;
 
     private static final double SEED_WEIGHT = 0.7;
     private static final int MAX_IDLE_SEED = 10;
@@ -21,10 +24,17 @@ public strictfp class BuilderRobot extends Robot {
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
-        tryRepair();
-        tryBuild();
-        trySeed();
-        tryMove();
+        boolean repaired = tryRepair();
+        boolean built = tryBuild();
+        if (!repaired && !built) trySeed();
+        if (tryMove()) {
+            repaired = tryRepair();
+            built = tryBuild();
+            if (!repaired && !built) {
+                trySeed();
+                locationScore *= SCORE_DECAY;
+            }
+        }
     }
     
     RobotInfo[] nearbyRobots;
@@ -42,22 +52,20 @@ public strictfp class BuilderRobot extends Robot {
 
     public MapLocation findSeedLocation() throws GameActionException {
         MapLocation current = rc.getLocation();
-        MapLocation check;
-        // find nearest empty spot in vision
-        // inefficient, but hopefully doesnt matter
-        // these 3 loops check in squares of increasing radius around the current location
-        for(int i = 1; i < 7; i++) {
-            for(int j = 0; j < i; j++) {
-                for(int k = 0; k < (i - j); k++) {
-                    check = new MapLocation(current.x + j, current.y + k);
-                    if(rc.canSenseLocation(check) && rc.senseLead(check) == 0) {
-                        return check;
-                    }
+        MapLocation best = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.BUILDER.visionRadiusSquared)) {
+            dist = check.distanceSquaredTo(current);
+            if (dist < bestDist) {
+                if (rc.canSenseLocation(check) && rc.senseLead(check) == 0) {
+                    best = check;
+                    bestDist = dist;
                 }
             }
         }
 
-        return null;
+        return best;
     }
 
     /*
@@ -69,7 +77,7 @@ public strictfp class BuilderRobot extends Robot {
             return false;
         }
 
-        if(Communications.readTotalEnemies(rc) > TOWER_THRESHOLD && towerCooldown == 0) {
+        /*if(Communications.readTotalEnemies(rc) > TOWER_THRESHOLD && towerCooldown == 0) {
             if(tryBuild(RobotType.WATCHTOWER)) {
                 towerCooldown = TOWER_COOLDOWN;
                 return true;
@@ -77,9 +85,9 @@ public strictfp class BuilderRobot extends Robot {
         }
         else {
             return tryBuild(RobotType.LABORATORY);
-        }
+        }*/
 
-        return false;
+        return tryBuild(RobotType.WATCHTOWER);
     }
 
     public boolean tryBuild(RobotType type) throws GameActionException {
@@ -89,8 +97,10 @@ public strictfp class BuilderRobot extends Robot {
         for (Direction d : directions) {
             loc = current.add(d);
             if (validBuildLocation(loc) && rc.canBuildRobot(type, d)) {
-                rc.buildRobot(type, d);
-                return true;
+                if (rc.canSenseLocation(loc) && rc.senseLead(loc) > 0) {
+                    rc.buildRobot(type, d);
+                    return true;
+                }
             }
         }
 
@@ -134,21 +144,57 @@ public strictfp class BuilderRobot extends Robot {
     }
 
     public void findTarget() throws GameActionException {
+        if (targetLocation != null) {
+            if (rc.getLocation().isWithinDistanceSquared(targetLocation, 2)) {
+                targetLocation = null;
+            } else if (locationScore < CHANGE_TARGET_THRESHOLD) {
+                targetLocation = null;
+            }
+        }
+
+        MapLocation repairLocation = findRepairLocation();
+        if (repairLocation != null) {
+            targetLocation = repairLocation;
+            locationScore = 2;
+            return;
+        }
+
         MapLocation buildLocation = findBuildLocation();
         if (buildLocation != null) {
             targetLocation = buildLocation;
+            locationScore = 1;
             return;
         }
         
         MapLocation seedLocation = findSeedLocation();
         if (seedLocation != null) {
             targetLocation = seedLocation;
+            locationScore = 1;
             return;
         }
         
         if (targetLocation == null) {
-            targetLocation = getRandomLocationWithinChebyshevDistance(6);
+            targetLocation = getRandomLocation();
         }
+    }
+
+    public MapLocation findRepairLocation() throws GameActionException {
+        Team team = rc.getTeam();
+        MapLocation current = rc.getLocation();
+        MapLocation best = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        for (RobotInfo nearbyRobot : nearbyRobots) {
+            if (nearbyRobot.team == team && RobotType.BUILDER.canRepair(nearbyRobot.type)
+                    && nearbyRobot.health < nearbyRobot.type.getMaxHealth(nearbyRobot.level)) {
+                dist = current.distanceSquaredTo(nearbyRobot.location);
+                if (dist < bestDist) {
+                    best = nearbyRobot.location;
+                    bestDist = dist;
+                }
+            }
+        }
+        return best;
     }
 
     /*
@@ -156,22 +202,19 @@ public strictfp class BuilderRobot extends Robot {
     */
     public MapLocation findBuildLocation() throws GameActionException {
         MapLocation current = rc.getLocation();
-        MapLocation check;
-        // inefficient, but hopefully doesnt matter
-        // these 3 loops check in squares of increasing radius around the current location
-        for(int i = 1; i < 7; i++) {
-            for(int j = 0; j < i; j++) {
-                for(int k = 0; k < (i - j); k++) {
-                    check = new MapLocation(current.x + j, current.y + k);
-                    if(validBuildLocation(check)) {
-                        if(rc.canSenseLocation(check) && rc.senseRobotAtLocation(check) == null) {
-                            return check;
-                        }
-                    }
+        MapLocation best = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.BUILDER.visionRadiusSquared)) {
+            dist = check.distanceSquaredTo(current);
+            if (dist < bestDist) {
+                if (validBuildLocation(check)) {
+                    best = check;
+                    bestDist = dist;
                 }
             }
         }
 
-        return null;
+        return best;
     }
 }
