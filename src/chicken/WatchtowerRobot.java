@@ -4,6 +4,7 @@ import battlecode.common.*;
 
 public strictfp class WatchtowerRobot extends Robot {
     private static final int MAX_IDLE_TURNS = 10;
+    private static final int INITIAL_IDLE_TURNS = 50;
     private int idleTurns = 0;
 
     MapLocation targetLocation;
@@ -14,6 +15,7 @@ public strictfp class WatchtowerRobot extends Robot {
 
     public WatchtowerRobot(RobotController rc) {
         super(rc);
+        idleTurns = -INITIAL_IDLE_TURNS;
     }
 
     @Override
@@ -32,14 +34,16 @@ public strictfp class WatchtowerRobot extends Robot {
                 }
                 break;
             case PORTABLE:
-                tryMove();
-                if(shouldBecomeTurret()) {
+                if (shouldBecomeTurret()) {
                     if(rc.canTransform()) {
                         rc.transform();
                     }
+                } else {
+                    tryMove();
                 }
                 break;
         }
+        rc.setIndicatorString("sbt? " + shouldBecomeTurret() + "aen?" + areEnemiesNearby);
     }
 
     public void runTurret() throws GameActionException {
@@ -55,7 +59,7 @@ public strictfp class WatchtowerRobot extends Robot {
     }
 
     public boolean shouldBecomePortable() {
-        return ((!areEnemiesNearby) || (idleTurns > MAX_IDLE_TURNS));
+        return ((!areEnemiesNearby) && (idleTurns > MAX_IDLE_TURNS));
     }
 
     RobotInfo[] nearbyRobots;
