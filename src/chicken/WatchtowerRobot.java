@@ -3,7 +3,9 @@ package chicken;
 import battlecode.common.*;
 
 public strictfp class WatchtowerRobot extends Robot {
+    private static final int MIN_IDLE_TURNS = 1;
     private static final int MAX_IDLE_TURNS = 10;
+    private static final int CRITICAL_MASS = 16;
     private static final int INITIAL_IDLE_TURNS = 50;
     private int idleTurns = 0;
 
@@ -34,16 +36,14 @@ public strictfp class WatchtowerRobot extends Robot {
                 }
                 break;
             case PORTABLE:
-                if (shouldBecomeTurret()) {
+                boolean moved = tryMove();
+                if (shouldBecomeTurret(moved)) {
                     if(rc.canTransform()) {
                         rc.transform();
                     }
-                } else {
-                    tryMove();
                 }
                 break;
         }
-        rc.setIndicatorString("sbt? " + shouldBecomeTurret() + "aen? " + areEnemiesNearby + "range? " + RobotType.WATCHTOWER.actionRadiusSquared);
     }
 
     public void runTurret() throws GameActionException {
@@ -54,12 +54,12 @@ public strictfp class WatchtowerRobot extends Robot {
         tryMove();
     }
 
-    public boolean shouldBecomeTurret() {
-        return areAttackableEnemies;
+    public boolean shouldBecomeTurret(boolean moved) {
+        return areAttackableEnemies && (nearbyWatchtowers < CRITICAL_MASS || !moved);
     }
 
     public boolean shouldBecomePortable() {
-        return ((!areEnemiesNearby) && (idleTurns > MAX_IDLE_TURNS));
+        return ((!areEnemiesNearby) && (idleTurns > MAX_IDLE_TURNS || (idleTurns > MIN_IDLE_TURNS && nearbyWatchtowers > CRITICAL_MASS)));
     }
 
     RobotInfo[] nearbyRobots;
