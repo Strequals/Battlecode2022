@@ -63,7 +63,7 @@
 ##############################################################################
 
 # Set JAVA_HOME to Java 8
-JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-amd64/"
+JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
 # Attempt to set APP_HOME
 
