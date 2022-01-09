@@ -99,7 +99,7 @@ public strictfp class ArchonRobot extends Robot {
     }
 
     public boolean tryBuild() throws GameActionException {
-        if ((1 + Communications.countHigherPriorityArchons(rc)) * 75 > rc.getTeamLeadAmount(rc.getTeam())) {
+        if (Communications.countHigherPriorityArchons(rc) > 0) {
             Communications.incrementArchonPriority(rc);
             return false;
         }

@@ -14,7 +14,7 @@ public strictfp class ArchonRobot extends Robot {
         super(rc);
         minerWeight = 1;
         soldierWeight = -8;
-        builderWeight = 0;
+        builderWeight = -32;
         Communications.calculateArchonNumber(rc);
     }
 
@@ -77,8 +77,8 @@ public strictfp class ArchonRobot extends Robot {
     }
 
     private static final double ENEMY_WEIGHT = 0.1;
-    private static final double BASE_SOLDIER_WEIGHT = 0.2;
-    private static final double MAX_ENEMIES_BONUS = 3;
+    private static final double BASE_SOLDIER_WEIGHT = 0.4;
+    private static final double MAX_ENEMIES_BONUS = 2;
 
     public void updateSoldierWeight(double totalEnemies) throws GameActionException {
         double bonus = ENEMY_WEIGHT * totalEnemies;

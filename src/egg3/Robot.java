@@ -172,8 +172,4 @@ public strictfp abstract class Robot {
             Communications.addResourceData(rc, rc.getLocation(), r.value);
         }
     }
-
-    public boolean validBuildLocation(MapLocation l) throws GameActionException {
-        return (l.x % 2 == 0) && (l.y % 2 == 0);
-    }
 }
