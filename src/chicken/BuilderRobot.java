@@ -40,7 +40,34 @@ public strictfp class BuilderRobot extends Robot {
     RobotInfo[] nearbyRobots;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
+        MapLocation fleeFrom = null;
+        int fleeDistanceSquared = Integer.MAX_VALUE;
         processAndBroadcastEnemies(nearbyRobots);
+        for (RobotInfo otherRobot : nearbyRobots) {
+            if (otherRobot.team == rc.getTeam()) {
+
+            } else {
+                if (otherRobot.type.canAttack() && otherRobot.mode.canAct) {
+                    MapLocation attackedFrom;
+                    if (otherRobot.mode == RobotMode.TURRET) {
+                        attackedFrom = otherRobot.location;
+                    } else {
+                        attackedFrom = otherRobot.location.add(otherRobot.location.directionTo(rc.getLocation()));
+                    }
+                    int dsq = attackedFrom.distanceSquaredTo(rc.getLocation());
+                    if (dsq < fleeDistanceSquared) {
+                        fleeDistanceSquared = dsq;
+                        fleeFrom = attackedFrom;
+                    }
+                }
+            }
+        }
+
+        if (fleeFrom != null) {
+            tryFlee(fleeFrom);
+            targetLocation = null;
+            //locationScore *= SCORE_DECAY;
+        }
     }
 
     public void trySeed() throws GameActionException {

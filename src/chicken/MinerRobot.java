@@ -62,6 +62,7 @@ public strictfp class MinerRobot extends Robot {
         if (fleeFrom != null) {
             tryFlee(fleeFrom);
             resourceLocation = null;
+            //locationScore *= SCORE_DECAY;
         }
         
         processAndBroadcastEnemies(nearbyRobots);

@@ -4,6 +4,8 @@ import battlecode.common.*;
 
 public strictfp class WatchtowerRobot extends Robot {
 
+    MapLocation targetLocation;
+
     public WatchtowerRobot(RobotController rc) {
         super(rc);
     }
@@ -11,18 +13,49 @@ public strictfp class WatchtowerRobot extends Robot {
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
+        switch (rc.getMode()) {
+            case TURRET:
+                tryAttack();
+            case PORTABLE:
+                tryMove();
+        }
+    }
+
+    public void runTurret() throws GameActionException {
         tryAttack();
+    }
+
+    public void runPortable() throws GameActionException {
+        tryMove();
+    }
+
+    public boolean shouldBecomeTurret() {
+        return false;
+    }
+
+    public boolean shouldBecomePortable() {
+        return false;
     }
 
     RobotInfo[] nearbyRobots;
     boolean areEnemiesNearby;
+    boolean areAttackableEnemies;
+    int nearbyWatchtowers;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
+        areEnemiesNearby = false;
+        areAttackableEnemies = false;
+        nearbyWatchtowers = 0;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == rc.getTeam()) {
-
+                if (otherRobot.type == RobotType.WATCHTOWER) {
+                    nearbyWatchtowers++;
+                }
             } else {
                 areEnemiesNearby = true;
+                if (otherRobot.location.isWithinDistanceSquared(rc.getLocation(), RobotType.WATCHTOWER.actionRadiusSquared)) {
+                    areAttackableEnemies = true;
+                }
                 break;
             }
         }
@@ -37,6 +70,10 @@ public strictfp class WatchtowerRobot extends Robot {
                 return true;
             }
         }
+        return false;
+    }
+
+    public boolean tryMove() throws GameActionException {
         return false;
     }
 
