@@ -169,7 +169,9 @@ public strictfp abstract class Robot {
     public void broadcastNearbyResources() throws GameActionException {
         Resource r = senseAllNearbyResources();
         if (r != null) {
-            Communications.addResourceData(rc, rc.getLocation(), r.value);
+            Communications.addResourceData(rc, r.location, r.value);
+        } else {
+            Communications.addResourceData(rc, rc.getLocation(), 0);
         }
     }
 

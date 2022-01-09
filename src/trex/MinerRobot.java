@@ -162,13 +162,17 @@ public strictfp class MinerRobot extends Robot {
         }
         Resource r = senseAllNearbyResources();
         if (r != null) {
-            if (r.location.distanceSquaredTo(rc.getLocation()) < 2
+            if (r.location.distanceSquaredTo(rc.getLocation()) <= 2
                     || nearbyMiners < TOO_MANY_MINERS || rng.nextInt(nearbyMiners) < TOO_MANY_MINERS) {
+                    //|| nearbyMiners < TOO_MANY_MINERS) {
                 resourceLocation = r.location;
                 locationScore = 2;
-                Communications.addResourceData(rc, rc.getLocation(), r.value);
+                
                 return;
             }
+            Communications.addResourceData(rc, r.location, r.value);
+        } else {
+            Communications.addResourceData(rc, rc.getLocation(), 0);
         }
         
         if (resourceLocation == null) {
