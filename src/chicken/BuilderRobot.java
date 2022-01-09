@@ -24,13 +24,16 @@ public strictfp class BuilderRobot extends Robot {
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
+        calculateShouldMutateLevel();
         boolean repaired = tryRepair();
+        boolean mutated = tryMutate();
         boolean built = tryBuild();
-        if (!repaired && !built) trySeed();
+        if (!repaired && !mutated && !built) trySeed();
         if (tryMove()) {
             repaired = tryRepair();
+            mutated = tryMutate();
             built = tryBuild();
-            if (!repaired && !built) {
+            if (!repaired && !mutated && !built) {
                 trySeed();
                 locationScore *= SCORE_DECAY;
             }
@@ -153,6 +156,21 @@ public strictfp class BuilderRobot extends Robot {
         return false;
     }
 
+    public boolean tryMutate() throws GameActionException {
+        if (!rc.isActionReady()) return false;
+        Team team = rc.getTeam();
+        for (RobotInfo nearbyRobot : nearbyRobots) {
+            if (nearbyRobot.team == team && RobotType.BUILDER.canMutate(nearbyRobot.type)
+                && nearbyRobot.level < shouldMutateLevel) {
+                if (rc.canMutate(nearbyRobot.location)) {
+                    rc.mutate(nearbyRobot.location);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean tryMove() throws GameActionException {
         if (!rc.isMovementReady()) return false;
         findTarget();
@@ -183,9 +201,9 @@ public strictfp class BuilderRobot extends Robot {
             }
         }
 
-        MapLocation repairLocation = findRepairLocation();
-        if (repairLocation != null) {
-            targetLocation = repairLocation;
+        MapLocation repairMutateLocation = findRepairOrMutateLocation();
+        if (repairMutateLocation != null) {
+            targetLocation = repairMutateLocation;
             locationScore = 2;
             return;
         }
@@ -229,6 +247,45 @@ public strictfp class BuilderRobot extends Robot {
         }
         return best;
     }
+    public static final int MUTATE_1 = 1000;
+    public static final int MUTATE_2 = 1500;
+    public int shouldMutateLevel = 1;
+    public void calculateShouldMutateLevel() throws GameActionException {
+        int leadAmount = rc.getTeamLeadAmount(rc.getTeam());
+        if (leadAmount > MUTATE_1) {
+            shouldMutateLevel = 2;
+        } else {
+            shouldMutateLevel = 1;
+        }
+    }
+
+    public MapLocation findRepairOrMutateLocation() throws GameActionException {
+        Team team = rc.getTeam();
+        MapLocation current = rc.getLocation();
+        MapLocation best = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        for (RobotInfo nearbyRobot : nearbyRobots) {
+            if (nearbyRobot.team == team) {
+                if (RobotType.BUILDER.canRepair(nearbyRobot.type)
+                    && nearbyRobot.health < nearbyRobot.type.getMaxHealth(nearbyRobot.level)) {
+                    dist = current.distanceSquaredTo(nearbyRobot.location);
+                    if (dist < bestDist) {
+                        best = nearbyRobot.location;
+                        bestDist = dist;
+                    }
+                } else if (RobotType.BUILDER.canMutate(nearbyRobot.type)
+                        && nearbyRobot.level < shouldMutateLevel) {
+                    dist = current.distanceSquaredTo(nearbyRobot.location);
+                    if (dist < bestDist) {
+                        best = nearbyRobot.location;
+                        bestDist = dist;
+                    }
+                }
+            }
+        }
+        return best;
+    }
 
     /*
     *  searches for a spot on odd x and y, not occupied (should also maybe make sure no archons are nearby)
@@ -250,4 +307,5 @@ public strictfp class BuilderRobot extends Robot {
 
         return best;
     }
+
 }
