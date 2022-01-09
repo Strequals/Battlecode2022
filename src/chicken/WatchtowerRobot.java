@@ -43,7 +43,7 @@ public strictfp class WatchtowerRobot extends Robot {
                 }
                 break;
         }
-        rc.setIndicatorString("sbt? " + shouldBecomeTurret() + "aen?" + areEnemiesNearby);
+        rc.setIndicatorString("sbt? " + shouldBecomeTurret() + "aen? " + areEnemiesNearby + "range? " + RobotType.WATCHTOWER.actionRadiusSquared);
     }
 
     public void runTurret() throws GameActionException {
@@ -81,7 +81,6 @@ public strictfp class WatchtowerRobot extends Robot {
                 if (otherRobot.location.isWithinDistanceSquared(rc.getLocation(), RobotType.WATCHTOWER.actionRadiusSquared)) {
                     areAttackableEnemies = true;
                 }
-                break;
             }
         }
         processAndBroadcastEnemies(nearbyRobots);
