@@ -1,4 +1,4 @@
-package trex;
+package chicken2;
 
 import battlecode.common.*;
 
@@ -12,9 +12,9 @@ public strictfp class ArchonRobot extends Robot {
 
     public ArchonRobot(RobotController rc) throws GameActionException {
         super(rc);
-        minerWeight = 4;
+        minerWeight = 1;
         soldierWeight = -8;
-        builderWeight = -64;
+        builderWeight = -32;
         Communications.calculateArchonNumber(rc);
     }
 
@@ -34,7 +34,7 @@ public strictfp class ArchonRobot extends Robot {
                 + rc.getTeamLeadAmount(rc.getTeam()));
     }
 
-    private static final double PANIC_SOLDIER_WEIGHT = 1;
+    private static final double PANIC_SOLDIER_WEIGHT = 4;
 
     RobotInfo[] nearbyRobots;
     boolean enemiesNearby = false;
@@ -90,7 +90,7 @@ public strictfp class ArchonRobot extends Robot {
     
     private static final double RESOURCE_PENALTY = 0.0001;
     private static final double BASE_BUILDER_WEIGHT = 1.5;
-    private static final double MAX_RESOURCE_PENALTY = 0.4;
+    private static final double MAX_RESOURCE_PENALTY = 0.38;
     
     public void updateBuilderWeight(double totalResources) throws GameActionException {
         double penalty = RESOURCE_PENALTY * totalResources;

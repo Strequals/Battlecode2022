@@ -1,12 +1,10 @@
-package trex;
+package chicken2;
 
 import battlecode.common.*;
 
 public strictfp class MinerRobot extends Robot {
     
     MapLocation resourceLocation;
-    MapLocation tabuLocation;
-    static final int TABU_RANGE = 34;
     double locationScore;
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_RESOURCE_THRESHOLD = 0.1;
@@ -130,7 +128,7 @@ public strictfp class MinerRobot extends Robot {
      **/
     public boolean tryMove() throws GameActionException {
         findResources();
-        rc.setIndicatorString("location: " + resourceLocation + ", tabuLoc: " + tabuLocation);
+        rc.setIndicatorString("location: " + resourceLocation + ", score: " + locationScore);
         if (!rc.getLocation().equals(resourceLocation)) {
             Direction d = null;
             if (rc.getLocation().distanceSquaredTo(resourceLocation) > 2) {
@@ -142,24 +140,12 @@ public strictfp class MinerRobot extends Robot {
                 rc.move(d);
                 return true;
             }
-        } else {
-            // TODO: try moving in random direction or something here
         }
         return false;
     }
 
-    public double getScoutProbability() {
-        int roundNum = rc.getRoundNum();
-        if (roundNum < 10) {
-            return 1;
-        } else if (roundNum < 110) {
-            return 1 - 0.005 * (roundNum - 10);
-        } else {
-            return 0.5;
-        }
-    }
-
     public static final double VALUE_THRESHOLD = 64;
+    public static final double SCOUT_THRESHOLD = 128;
     public static final double TOO_MANY_MINERS = 2;
     
     /**
@@ -167,41 +153,32 @@ public strictfp class MinerRobot extends Robot {
      * location at random.
      **/
     public void findResources() throws GameActionException {
-        Resource r = senseAllNearbyResources();
-        if (r != null) {
-            Communications.addResourceData(rc, r.location, r.value);
-        } else {
-            Communications.addResourceData(rc, rc.getLocation(), 0);
-        }
-
         if (resourceLocation != null) {
             if (rc.getLocation().isWithinDistanceSquared(resourceLocation, 2)) {
-                if (r == null) {
-                    tabuLocation = rc.getLocation();
-                }
                 resourceLocation = null;
-                
             } else if (locationScore < CHANGE_RESOURCE_THRESHOLD) {
                 resourceLocation = null;
             }
         }
-
+        Resource r = senseAllNearbyResources();
         if (r != null) {
-            if ((r.location.distanceSquaredTo(rc.getLocation()) <= 2
-                        || (tabuLocation == null || r.location.distanceSquaredTo(tabuLocation) > TABU_RANGE))
-                    && (nearbyMiners < TOO_MANY_MINERS || rng.nextInt(nearbyMiners) < TOO_MANY_MINERS)) {
+            if (r.location.distanceSquaredTo(rc.getLocation()) <= 2
+                    || nearbyMiners < TOO_MANY_MINERS || rng.nextInt(nearbyMiners) < TOO_MANY_MINERS) {
                     //|| nearbyMiners < TOO_MANY_MINERS) {
                 resourceLocation = r.location;
                 locationScore = 2;
+                
                 return;
             }
+            Communications.addResourceData(rc, r.location, r.value);
+        } else {
+            Communications.addResourceData(rc, rc.getLocation(), 0);
         }
         
         if (resourceLocation == null) {
             r = Communications.readResourceData(rc);
-            if (r != null && r.value > VALUE_THRESHOLD
-                    && (tabuLocation == null || r.location.distanceSquaredTo(tabuLocation) > TABU_RANGE)) {
-                if (r.value > VALUE_THRESHOLD && rng.nextDouble() > getScoutProbability()) {
+            if (r != null && r.value > VALUE_THRESHOLD) {
+                if (SCOUT_THRESHOLD * rng.nextDouble() < r.value - VALUE_THRESHOLD) {
                     resourceLocation = r.location;
                     locationScore = 2;
                     return;
