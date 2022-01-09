@@ -29,7 +29,9 @@ public strictfp class ArchonRobot extends Robot {
         rc.setIndicatorString(Communications.readArchonPriority(rc, 0) + " " 
                 + Communications.readArchonPriority(rc, 1) + " "
                 + Communications.readArchonPriority(rc, 2) + " "
-                + Communications.readArchonPriority(rc, 3));
+                + Communications.readArchonPriority(rc, 3) + " "
+                + Communications.countHigherPriorityArchons(rc) + " "
+                + rc.getTeamLeadAmount(rc.getTeam()));
     }
 
     private static final double PANIC_SOLDIER_WEIGHT = 4;
@@ -98,9 +100,11 @@ public strictfp class ArchonRobot extends Robot {
         penalty = 0;
         builderWeight += BASE_BUILDER_WEIGHT - penalty;
     }
-
+    
+    public static final int MOST_EXPENSIVE_UNIT_PRICE_LEAD = 75;
     public boolean tryBuild() throws GameActionException {
-        if (Communications.countHigherPriorityArchons(rc) * 75 > rc.getTeamLeadAmount(rc.getTeam())) {
+        if ((1 + Communications.countHigherPriorityArchons(rc)) * MOST_EXPENSIVE_UNIT_PRICE_LEAD
+                > rc.getTeamLeadAmount(rc.getTeam())) {
             Communications.incrementArchonPriority(rc);
             return false;
         }

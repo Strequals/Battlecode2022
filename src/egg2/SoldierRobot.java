@@ -107,6 +107,10 @@ public strictfp class SoldierRobot extends Robot {
         return best;
     }
 
+    /**
+     * Selects an opposing enemy in vision range by the same criteria as identifyTarget.
+     */
+
     public MapLocation findTarget() throws GameActionException {
         if (!areEnemiesNearby) return null;
         MapLocation best = null;

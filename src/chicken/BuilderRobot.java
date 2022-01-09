@@ -58,7 +58,7 @@ public strictfp class BuilderRobot extends Robot {
         for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.BUILDER.visionRadiusSquared)) {
             dist = check.distanceSquaredTo(current);
             if (dist < bestDist) {
-                if (rc.canSenseLocation(check) && rc.senseLead(check) == 0) {
+                if (rc.canSenseLocation(check) && rc.senseLead(check) == 0 && !rc.canSenseRobotAtLocation(check)) {
                     best = check;
                     bestDist = dist;
                 }
@@ -73,7 +73,7 @@ public strictfp class BuilderRobot extends Robot {
     */
     public boolean tryBuild() throws GameActionException {
 
-        if(rc.getTeamLeadAmount(rc.getTeam()) < BUILD_THRESHOLD) {
+        if(!shouldBuild()) {
             return false;
         }
 
@@ -88,6 +88,10 @@ public strictfp class BuilderRobot extends Robot {
         }*/
 
         return tryBuild(RobotType.WATCHTOWER);
+    }
+
+    public boolean shouldBuild() {
+        return rc.getTeamLeadAmount(rc.getTeam()) >= BUILD_THRESHOLD;
     }
 
     public boolean tryBuild(RobotType type) throws GameActionException {
@@ -159,13 +163,15 @@ public strictfp class BuilderRobot extends Robot {
             return;
         }
 
-        MapLocation buildLocation = findBuildLocation();
-        if (buildLocation != null) {
-            targetLocation = buildLocation;
-            locationScore = 1;
-            return;
+        if (shouldBuild()) {
+            MapLocation buildLocation = findBuildLocation();
+            if (buildLocation != null) {
+                targetLocation = buildLocation;
+                locationScore = 1;
+                return;
+            }
         }
-        
+
         MapLocation seedLocation = findSeedLocation();
         if (seedLocation != null) {
             targetLocation = seedLocation;
@@ -208,7 +214,7 @@ public strictfp class BuilderRobot extends Robot {
         for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.BUILDER.visionRadiusSquared)) {
             dist = check.distanceSquaredTo(current);
             if (dist < bestDist) {
-                if (validBuildLocation(check)) {
+                if (validBuildLocation(check) && !rc.canSenseRobotAtLocation(check)) {
                     best = check;
                     bestDist = dist;
                 }
