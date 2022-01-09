@@ -3,8 +3,14 @@ package chicken;
 import battlecode.common.*;
 
 public strictfp class WatchtowerRobot extends Robot {
+    private static final int MAX_IDLE_TURNS = 10;
+    private int idleTurns = 0;
 
     MapLocation targetLocation;
+    double locationScore;
+    static final double SCORE_DECAY = 0.8;
+    static final double CHANGE_TARGET_THRESHOLD = 0.1;
+    static final int GIVE_UP_RADIUS_SQUARED = 2;
 
     public WatchtowerRobot(RobotController rc) {
         super(rc);
@@ -16,8 +22,23 @@ public strictfp class WatchtowerRobot extends Robot {
         switch (rc.getMode()) {
             case TURRET:
                 tryAttack();
+                if(shouldBecomePortable()) {
+                    if(rc.canTransform()) {
+                        rc.transform();
+                    }
+                }
+                if(!areAttackableEnemies) {
+                    idleTurns++;
+                }
+                break;
             case PORTABLE:
                 tryMove();
+                if(shouldBecomeTurret()) {
+                    if(rc.canTransform()) {
+                        rc.transform();
+                    }
+                }
+                break;
         }
     }
 
@@ -30,11 +51,11 @@ public strictfp class WatchtowerRobot extends Robot {
     }
 
     public boolean shouldBecomeTurret() {
-        return false;
+        return areAttackableEnemies;
     }
 
     public boolean shouldBecomePortable() {
-        return false;
+        return ((!areEnemiesNearby) || (idleTurns > MAX_IDLE_TURNS));
     }
 
     RobotInfo[] nearbyRobots;
@@ -72,8 +93,46 @@ public strictfp class WatchtowerRobot extends Robot {
         }
         return false;
     }
+    
+    public void findTargets() throws GameActionException {
+        if (targetLocation != null) {
+            if (rc.getLocation().isWithinDistanceSquared(targetLocation, GIVE_UP_RADIUS_SQUARED)) {
+                targetLocation = null;
+            } else if (locationScore < CHANGE_TARGET_THRESHOLD) {
+                targetLocation = null;
+            }
+        }
+        
+        MapLocation t = identifyTarget();
+        if (t != null) {
+            targetLocation = t;
+            locationScore = 1;
+            return;
+        }
+        if (targetLocation == null) {
+            Resource r = Communications.readEnemiesData(rc);
+            if (r != null && locationScore > SoldierRobot.VALUE_THRESHOLD) {
+                targetLocation = r.location;
+                locationScore = 2;
+                return;
+            }
+        }
+
+        if (targetLocation == null) {
+            targetLocation = getRandomLocation();
+            locationScore = 0.5;
+        }
+    }
 
     public boolean tryMove() throws GameActionException {
+        findTargets();
+        if (!rc.getLocation().isWithinDistanceSquared(targetLocation, GIVE_UP_RADIUS_SQUARED)) {
+            Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
+            if (d != null && rc.canMove(d)) {
+                rc.move(d);
+                return true;
+            }
+        }
         return false;
     }
 
