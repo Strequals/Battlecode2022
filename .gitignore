@@ -24,6 +24,9 @@ build/*
 
 # User-specific stuff:
 battlecode-scaffold.iws
+gradlew
+.gitignore
+.metadata
 
 # Eclipse user-specific files
 .classpath

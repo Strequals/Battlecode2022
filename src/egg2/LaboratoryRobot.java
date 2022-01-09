@@ -3,8 +3,8 @@ package egg2;
 import battlecode.common.*;
 
 public strictfp class LaboratoryRobot extends Robot {
-    private static final RATIO = 0.25;
-    private static final MIN_LEAD = 100;
+    private static final double RATIO = 0.25;
+    private static final double MIN_LEAD = 100;
 
     public LaboratoryRobot(RobotController rc) {
         super(rc);
@@ -24,8 +24,8 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public void tryTransmute() throws GameActionException {
-        int lead = 	getTeamLeadAmount(rc.getTeam());
-        int gold = 	getTeamGoldAmount(rc.getTeam());
+        int lead = rc.getTeamLeadAmount(rc.getTeam());
+        int gold = rc.getTeamGoldAmount(rc.getTeam());
         if(rc.canTransmute() && lead >= MIN_LEAD && (gold / lead) <= RATIO) {
             rc.transmute();
         }
