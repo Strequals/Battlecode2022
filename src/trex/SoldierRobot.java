@@ -120,8 +120,8 @@ public strictfp class SoldierRobot extends Robot {
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team != rc.getTeam()) {
                 if (otherRobot.type.canAttack()
-                        && otherRobot.mode.canAct
-                        && rc.getLocation().isWithinDistanceSquared(otherRobot.location, otherRobot.type.actionRadiusSquared)) {
+                        /*&& otherRobot.mode.canAct
+                        && rc.getLocation().isWithinDistanceSquared(otherRobot.location, otherRobot.type.actionRadiusSquared)*/) {
                     if (otherRobot.health < health) {
                         health = otherRobot.health;
                         canAttack = true;

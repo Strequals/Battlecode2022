@@ -89,7 +89,7 @@ public strictfp class ArchonRobot extends Robot {
     }
     
     private static final double RESOURCE_PENALTY = 0.0001;
-    private static final double BASE_BUILDER_WEIGHT = 0.8;
+    private static final double BASE_BUILDER_WEIGHT = 1.5;
     private static final double MAX_RESOURCE_PENALTY = 0.38;
     
     public void updateBuilderWeight(double totalResources) throws GameActionException {
@@ -97,7 +97,6 @@ public strictfp class ArchonRobot extends Robot {
         if (penalty > MAX_RESOURCE_PENALTY) {
             penalty = MAX_RESOURCE_PENALTY;
         }
-        penalty = 0;
         builderWeight += BASE_BUILDER_WEIGHT - penalty;
     }
     
