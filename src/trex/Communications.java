@@ -7,6 +7,8 @@ public strictfp class Communications {
     private static final int RESOURCE_NUM = 8;
     private static final int ENEMIES_START = 8;
     private static final int ENEMIES_NUM = 8;
+    private static final int MINER_COUNT_PREV = 61;
+    private static final int MINER_COUNT_INDEX = 62;
     private static final int ARCHON_PRIORITY_INDEX = 63;
 
     private static final double DECAY_FACTOR = 0.8;
@@ -230,6 +232,23 @@ public strictfp class Communications {
 
     public static double readTotalEnemies(RobotController rc) throws GameActionException {
         return readTotal(rc, ENEMIES_START, ENEMIES_NUM);
+    }
+
+    public static int getPrevMinerCount(RobotController rc) {
+        return array[MINER_COUNT_PREV];
+    }
+
+    public static int getCurrMinerCount(RobotController rc) {
+        return array[MINER_COUNT_INDEX];
+    }
+
+    public static void incrementMinerCount(RobotController rc) throws GameActionException {
+        rc.writeSharedArray(MINER_COUNT_INDEX, array[MINER_COUNT_INDEX] + 1);
+    }
+
+    public static void updateMinerCount(RobotController rc) throws GameActionException {
+        rc.writeSharedArray(MINER_COUNT_PREV, array[MINER_COUNT_INDEX]);
+        rc.writeSharedArray(MINER_COUNT_INDEX, 0);
     }
 
     public static void writeArchonPriority(RobotController rc) throws GameActionException {
