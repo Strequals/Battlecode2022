@@ -8,6 +8,9 @@ public strictfp class ArchonRobot extends Robot {
     private double soldierWeight;
     private double builderWeight;
     private boolean hasMovedAfterBecomingPortable;
+    private int income = 0;
+    private int previousLead = 200;
+    private boolean activeArchon = false;
 
     private static final double WEIGHT_DECAY = 0.5;
 
@@ -24,6 +27,7 @@ public strictfp class ArchonRobot extends Robot {
         processNearbyRobots();
         broadcastNearbyResources();
         updateWeights();
+        tryActivate();
         tryBuild();
         tryRepair();
         Communications.writeArchonPriority(rc);
@@ -34,6 +38,20 @@ public strictfp class ArchonRobot extends Robot {
                 + Communications.readArchonPriority(rc, 3) + " "
                 + Communications.countHigherPriorityArchons(rc) + " "
                 + rc.getTeamLeadAmount(rc.getTeam()));
+    }
+
+    public void tryActivate() throws GameActionException {
+        if(activeArchon) {
+            Communications.updateMinerCount(rc);
+        }
+        else {
+            int difference = Communications.getCurrMinerCount(rc) - Communications.getPrevMinerCount(rc);
+            int archonCount = rc.getArchonCount();
+            if(difference > archonCount || Communications.getCurrMinerCount(rc) > rc.getRobotCount() - archonCount) {
+                activeArchon = true;
+                Communications.updateMinerCount(rc);
+            }
+        }
     }
 
     private static final double PANIC_SOLDIER_WEIGHT = 1;
