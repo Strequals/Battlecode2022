@@ -7,8 +7,10 @@ public strictfp class Communications {
     private static final int RESOURCE_NUM = 8;
     private static final int ENEMIES_START = 8;
     private static final int ENEMIES_NUM = 8;
-    private static final int MINER_COUNT_PREV = 61;
-    private static final int MINER_COUNT_INDEX = 62;
+    private static final int PREV_INCOME_INDEX = 59;
+    private static final int INCOME_INDEX = 60;
+    private static final int MINER_COUNT_PREV = 61;  // count from previous round
+    private static final int MINER_COUNT_INDEX = 62; // actively incremented
     private static final int ARCHON_PRIORITY_INDEX = 63;
 
     private static final double DECAY_FACTOR = 0.95;
@@ -232,6 +234,19 @@ public strictfp class Communications {
 
     public static double readTotalEnemies(RobotController rc) throws GameActionException {
         return readTotal(rc, ENEMIES_START, ENEMIES_NUM);
+    }
+
+    public static int getIncome(RobotController rc) {
+        return array[PREV_INCOME_INDEX];
+    }
+
+    public static void correctIncome(RobotController rc, int mag) throws GameActionException {
+        rc.writeSharedArray(INCOME_INDEX, array[INCOME_INDEX] + mag);
+    }
+
+    public static void updateIncome(RobotController rc) throws GameActionException {
+        rc.writeSharedArray(PREV_INCOME_INDEX, array[INCOME_INDEX]);
+        rc.writeSharedArray(INCOME_INDEX, 0);
     }
 
     public static int getPrevMinerCount(RobotController rc) {
