@@ -7,6 +7,7 @@ public strictfp class ArchonRobot extends Robot {
     private double minerWeight;
     private double soldierWeight;
     private double builderWeight;
+    private boolean hasMovedAfterBecomingPortable;
 
     private static final double WEIGHT_DECAY = 0.5;
 
@@ -24,6 +25,7 @@ public strictfp class ArchonRobot extends Robot {
         broadcastNearbyResources();
         updateWeights();
         tryBuild();
+        tryRepair();
         Communications.writeArchonPriority(rc);
         //rc.setIndicatorString(Communications.archonNum + ", prty:" + Communications.archonPriority);
         rc.setIndicatorString(Communications.readArchonPriority(rc, 0) + " " 
@@ -88,9 +90,9 @@ public strictfp class ArchonRobot extends Robot {
         soldierWeight += BASE_SOLDIER_WEIGHT + bonus;
     }
     
-    private static final double RESOURCE_PENALTY = 0.0001;
+    private static final double RESOURCE_PENALTY = 0.0002;
     private static final double BASE_BUILDER_WEIGHT = 1.5;
-    private static final double MAX_RESOURCE_PENALTY = 0.4;
+    private static final double MAX_RESOURCE_PENALTY = 1;
     
     public void updateBuilderWeight(double totalResources) throws GameActionException {
         double penalty = RESOURCE_PENALTY * totalResources;
@@ -150,4 +152,45 @@ public strictfp class ArchonRobot extends Robot {
         }
         return false;
     }
+
+    public boolean tryRepair() throws GameActionException {
+        if (!rc.isActionReady()) return false;
+        MapLocation repairable = identifyRepairableRobot();
+        if (repairable != null && rc.canRepair(repairable)) {
+            rc.repair(repairable);
+            return true;
+        }
+
+        return false;
+        
+    }
+
+public MapLocation identifyRepairableRobot() throws GameActionException {
+        MapLocation best = null;
+        int health = Integer.MAX_VALUE;
+        boolean canAttack = false;
+        Team team = rc.getTeam();
+        for (RobotInfo otherRobot : nearbyRobots) {
+            if (otherRobot.team == team
+                    && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)
+                    && otherRobot.health < otherRobot.type.getMaxHealth(otherRobot.level)) {
+                if (otherRobot.type.canAttack()
+                        && otherRobot.mode.canAct) {
+                    if (otherRobot.health < health) {
+                        health = otherRobot.health;
+                        canAttack = true;
+                        best = otherRobot.location;
+                    }
+                } else if (!canAttack) {
+                    if (otherRobot.health < health) {
+                        health = otherRobot.health;
+                        best = otherRobot.location;
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+
 }

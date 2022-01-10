@@ -30,14 +30,18 @@ public strictfp class SoldierRobot extends Robot {
 
     RobotInfo[] nearbyRobots;
     boolean areEnemiesNearby;
+    boolean friendlyArchonNearby;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         MapLocation fleeFrom = null;
         areEnemiesNearby = false;
+        friendlyArchonNearby = false;
         int fleeDistanceSquared = Integer.MAX_VALUE;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == rc.getTeam()) {
-
+                if (otherRobot.type == RobotType.ARCHON) {
+                    friendlyArchonNearby = true;
+                }
             } else {
                 areEnemiesNearby = true;
                 if (otherRobot.type.canAttack() && otherRobot.mode.canAct) {
@@ -57,7 +61,7 @@ public strictfp class SoldierRobot extends Robot {
             }
         }
 
-        if (fleeFrom != null) {
+        if (fleeFrom != null && !friendlyArchonNearby) {
             tryAttack();
             tryFlee(fleeFrom);
             targetLocation = null;

@@ -130,7 +130,7 @@ public strictfp class MinerRobot extends Robot {
      **/
     public boolean tryMove() throws GameActionException {
         findResources();
-        rc.setIndicatorString("location: " + resourceLocation + ", tabuLoc: " + tabuLocation);
+        rc.setIndicatorString("location: " + resourceLocation + ", tabuLoc: " + tabuLocation + "scoutProb: " + getScoutProbability());
         if (!rc.getLocation().equals(resourceLocation)) {
             Direction d = null;
             if (rc.getLocation().distanceSquaredTo(resourceLocation) > 2) {

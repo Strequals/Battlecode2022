@@ -7,6 +7,8 @@ public strictfp class WatchtowerRobot extends Robot {
     private static final int MAX_IDLE_TURNS = 10;
     private static final int CRITICAL_MASS = 16;
     private static final int INITIAL_IDLE_TURNS = 50;
+
+    private boolean hasMovedAfterBecomingPortable;
     private int idleTurns = 0;
 
     MapLocation targetLocation;
@@ -29,6 +31,7 @@ public strictfp class WatchtowerRobot extends Robot {
                 if(shouldBecomePortable()) {
                     if(rc.canTransform()) {
                         rc.transform();
+                        hasMovedAfterBecomingPortable = false;
                     }
                 }
                 if(!areAttackableEnemies) {
@@ -36,10 +39,13 @@ public strictfp class WatchtowerRobot extends Robot {
                 }
                 break;
             case PORTABLE:
-                boolean moved = tryMove();
-                if (shouldBecomeTurret(moved)) {
+                if (shouldBecomeTurret() && hasMovedAfterBecomingPortable) {
                     if(rc.canTransform()) {
                         rc.transform();
+                    }
+                } else {
+                    if (tryMove()) {
+                        hasMovedAfterBecomingPortable = true;
                     }
                 }
                 break;
@@ -54,32 +60,38 @@ public strictfp class WatchtowerRobot extends Robot {
         tryMove();
     }
 
-    public boolean shouldBecomeTurret(boolean moved) {
-        return areAttackableEnemies && (nearbyWatchtowers < CRITICAL_MASS || !moved);
+    public boolean shouldBecomeTurret() {
+        return areAttackableDangerousEnemies;
     }
 
     public boolean shouldBecomePortable() {
-        return ((!areEnemiesNearby) && (idleTurns > MAX_IDLE_TURNS || (idleTurns > MIN_IDLE_TURNS && nearbyWatchtowers > CRITICAL_MASS)));
+        return ((!areAttackableEnemies || (!areAttackableDangerousEnemies && idleTurns > MAX_IDLE_TURNS)) && (idleTurns > MAX_IDLE_TURNS || (idleTurns > MIN_IDLE_TURNS && nearbyWatchtowers > CRITICAL_MASS)));
     }
 
     RobotInfo[] nearbyRobots;
     boolean areEnemiesNearby;
     boolean areAttackableEnemies;
+    boolean areAttackableDangerousEnemies;
     int nearbyWatchtowers;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         areEnemiesNearby = false;
         areAttackableEnemies = false;
+        areAttackableDangerousEnemies = false;
         nearbyWatchtowers = 0;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == rc.getTeam()) {
-                if (otherRobot.type == RobotType.WATCHTOWER) {
+                /*if (otherRobot.type == RobotType.WATCHTOWER && otherRobot.mode == RobotMode.TURRET) {
                     nearbyWatchtowers++;
-                }
+                }*/
+                nearbyWatchtowers++;
             } else {
                 areEnemiesNearby = true;
                 if (otherRobot.location.isWithinDistanceSquared(rc.getLocation(), RobotType.WATCHTOWER.actionRadiusSquared)) {
                     areAttackableEnemies = true;
+                    if (otherRobot.type.canAttack() && otherRobot.mode.canAct) {
+                        areAttackableDangerousEnemies = true;
+                    }
                 }
             }
         }
