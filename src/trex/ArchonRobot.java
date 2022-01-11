@@ -10,15 +10,22 @@ public strictfp class ArchonRobot extends Robot {
     private boolean hasMovedAfterBecomingPortable;
     private int previousLead = 200;
     private boolean activeArchon = false;
+    private boolean exploring;
+    
+    private int explorationMiners;
+    private static final int BASE_MIN_MINER = 8;
+    private static final double MINER_RATIO = 0.004;
 
     private static final double WEIGHT_DECAY = 0.5;
 
     public ArchonRobot(RobotController rc) throws GameActionException {
         super(rc);
-        minerWeight = 512;
+        minerWeight = 16;
         soldierWeight = -8;
         builderWeight = -64;
         Communications.calculateArchonNumber(rc);
+        explorationMiners = (int) (MINER_RATIO * rc.getMapWidth() * rc.getMapHeight()) + BASE_MIN_MINER;
+        exploring = true;
     }
 
     @Override
@@ -37,6 +44,8 @@ public strictfp class ArchonRobot extends Robot {
                 + Communications.readArchonPriority(rc, 3) + " "
                 + Communications.countHigherPriorityArchons(rc) + " "
                 + rc.getTeamLeadAmount(rc.getTeam()));*/
+
+        rc.setIndicatorString("miners:" + Communications.getPrevMinerCount(rc));
     }
 
     public void tryActivate() throws GameActionException {
@@ -98,6 +107,8 @@ public strictfp class ArchonRobot extends Robot {
     private static final double RESOURCE_WEIGHT = 0.00005;
     private static final double BASE_MINER_WEIGHT = 0.4;
     private static final double MAX_RESOURCE_BONUS = 0.4;
+    private static final double NOT_ENOUGH_MINERS_BONUS = 0.2;
+    private static final double MAKE_SOLDIERS_THRESHOLD = 2;
 
     public void updateWeights() throws GameActionException {
         double totalResources = Communications.readTotalResources(rc);
@@ -105,7 +116,26 @@ public strictfp class ArchonRobot extends Robot {
         updateMinerWeight(totalResources);
         updateSoldierWeight(totalEnemies);
         updateBuilderWeight(totalResources);
-        rc.setIndicatorString("resources: " + totalResources + ", enemies: " + totalEnemies + ", miner: " + minerWeight + ", soldier: " + soldierWeight + ", builder: " + builderWeight);
+        if (exploring && Communications.getCurrMinerCount(rc) < explorationMiners) {
+            if (!enemiesNearby) {
+                Resource r = Communications.readEnemiesData(rc);
+                rc.setIndicatorString("" + r.value);
+                if (r.value < MAKE_SOLDIERS_THRESHOLD) {
+                    if (soldierWeight > minerWeight) {
+                        soldierWeight = minerWeight - 0.000001;
+                    }
+                    /*if (builderWeight > minerWeight) {
+                        builderWeight = minerWeight - 0.000001;
+                    }*/
+                } else {
+                    exploring = false;
+                }
+                //if (builderWeight > minerWeight) builderWeight = minerWeight - 0.000001;
+            } else {
+                exploring = false;
+            }
+        }
+        //rc.setIndicatorString("m: " + minerWeight + ", s: " + soldierWeight + ", b: " + builderWeight);
     }
 
     public void updateMinerWeight(double totalResources) throws GameActionException {
@@ -113,12 +143,15 @@ public strictfp class ArchonRobot extends Robot {
         if (bonus > MAX_RESOURCE_BONUS) {
             bonus = MAX_RESOURCE_BONUS;
         }
+        if (Communications.getCurrMinerCount(rc) < explorationMiners) {
+            bonus += NOT_ENOUGH_MINERS_BONUS;
+        }
         minerWeight += BASE_MINER_WEIGHT + bonus;
     }
 
     private static final double ENEMY_WEIGHT = 0.1;
-    private static final double BASE_SOLDIER_WEIGHT = 2;
-    private static final double MAX_ENEMIES_BONUS = 1;
+    private static final double BASE_SOLDIER_WEIGHT = 3;
+    private static final double MAX_ENEMIES_BONUS = 2;
 
     public void updateSoldierWeight(double totalEnemies) throws GameActionException {
         double bonus = ENEMY_WEIGHT * totalEnemies;
@@ -129,15 +162,24 @@ public strictfp class ArchonRobot extends Robot {
     }
     
     private static final double RESOURCE_PENALTY = 0.0002;
-    private static final double BASE_BUILDER_WEIGHT = 1.5;
-    private static final double MAX_RESOURCE_PENALTY = 1;
+    private static final double BASE_BUILDER_WEIGHT = 3;
+    private static final double MAX_RESOURCE_PENALTY = 1.5;
+
+    public double builderWeightMultiplier() throws GameActionException {
+        int roundNum = rc.getRoundNum();
+        if (roundNum <= 50) {
+            return roundNum / 50.0;
+        } else {
+            return 1;
+        }
+    }
     
     public void updateBuilderWeight(double totalResources) throws GameActionException {
         double penalty = RESOURCE_PENALTY * totalResources;
         if (penalty > MAX_RESOURCE_PENALTY) {
             penalty = MAX_RESOURCE_PENALTY;
         }
-        builderWeight += BASE_BUILDER_WEIGHT - penalty;
+        builderWeight += builderWeightMultiplier() * (BASE_BUILDER_WEIGHT - penalty);
     }
     
     public static final int MOST_EXPENSIVE_UNIT_PRICE_LEAD = 75;

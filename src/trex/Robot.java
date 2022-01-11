@@ -62,11 +62,11 @@ public strictfp abstract class Robot {
         return false;
     }
 
-    public static final int ARCHON_SCORE = 20;
-    public static final int WATCHTOWER_SCORE = 3;
-    public static final int LABORATORY_SCORE = 5;
-    public static final int SOLDIER_SCORE = 2;
-    public static final int SAGE_SCORE = 3;
+    public static final int ARCHON_SCORE = 40;
+    public static final int WATCHTOWER_SCORE = 7;
+    public static final int LABORATORY_SCORE = 2;
+    public static final int SOLDIER_SCORE = 5;
+    public static final int SAGE_SCORE = 6;
     public static final int MINER_SCORE = 1;
     public static final int BUILDER_SCORE = 1;
 
