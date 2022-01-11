@@ -43,6 +43,10 @@ public strictfp abstract class Robot {
         return new MapLocation(x, y);
     }
 
+    public Direction getRandomDirection() {
+        return directions[rng.nextInt(8)];
+    }
+
     public static int getChebyshevDistance(MapLocation l1, MapLocation l2) {
         int dx = l1.x - l2.x;
         int dy = l1.y - l2.y;
@@ -170,6 +174,7 @@ public strictfp abstract class Robot {
         Resource r = senseAllNearbyResources();
         if (r != null) {
             Communications.addResourceData(rc, r.location, r.value);
+            rc.setIndicatorString("nearby Resources" + r.value);
         } else {
             Communications.addResourceData(rc, rc.getLocation(), 0);
         }

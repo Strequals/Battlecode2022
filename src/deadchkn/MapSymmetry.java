@@ -1,7 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.MapSymmetry;
 
 public strictfp enum MapSymmetry {
     HORIZONTAL,

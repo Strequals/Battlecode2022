@@ -1,10 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Communications;
-import trex.MapSymmetry;
-import trex.Resource;
-import trex.Robot;
 
 public strictfp class ArchonRobot extends Robot {
 

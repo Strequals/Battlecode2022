@@ -1,11 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Communications;
-import trex.Navigation;
-import trex.Resource;
-import trex.Robot;
-import trex.SoldierRobot;
 
 public strictfp class WatchtowerRobot extends Robot {
     private static final int MIN_IDLE_TURNS = 1;

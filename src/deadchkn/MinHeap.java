@@ -1,7 +1,5 @@
 package deadchkn;
 
-import trex.Pair;
-
 public strictfp class MinHeap<T> {
 
     private Pair[] arr;

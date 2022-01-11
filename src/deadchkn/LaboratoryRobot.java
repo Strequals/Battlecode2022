@@ -1,7 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Robot;
 
 public strictfp class LaboratoryRobot extends Robot {
     private static final double RATIO = 0.25;

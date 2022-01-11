@@ -1,8 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Navigation;
-import trex.Robot;
 
 import java.util.Random;
 

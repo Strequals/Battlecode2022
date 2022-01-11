@@ -1,7 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Robot;
 
 public strictfp class SageRobot extends Robot {
 

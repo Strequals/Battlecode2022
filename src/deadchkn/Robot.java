@@ -1,9 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Communications;
-import trex.Navigation;
-import trex.Resource;
 
 import java.util.Random;
 

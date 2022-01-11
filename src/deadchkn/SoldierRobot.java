@@ -1,11 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Communications;
-import trex.MapSymmetry;
-import trex.Navigation;
-import trex.Resource;
-import trex.Robot;
 
 public strictfp class SoldierRobot extends Robot {
 

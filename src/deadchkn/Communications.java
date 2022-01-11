@@ -1,7 +1,6 @@
 package deadchkn;
 
 import battlecode.common.*;
-import trex.Resource;
 
 public strictfp class Communications {
     private static final int RESOURCE_START = 0;

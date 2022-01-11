@@ -133,12 +133,6 @@ public strictfp class BuilderRobot extends Robot {
             if (validBuildLocation(loc) && rc.canBuildRobot(type, d)) {
                 if (rc.canSenseLocation(loc) && rc.senseLead(loc) > 0) {
                     rc.buildRobot(type, d);
-                    if(type == RobotType.LABORATORY) {
-                        Communications.correctIncome(rc, 800);
-                    }
-                    else {
-                        Communications.correctIncome(rc, 180);
-                    }
                     return true;
                 }
             }
@@ -170,9 +164,6 @@ public strictfp class BuilderRobot extends Robot {
                 && nearbyRobot.level < shouldMutateLevel) {
                 if (rc.canMutate(nearbyRobot.location)) {
                     rc.mutate(nearbyRobot.location);
-                    if(shouldMutateLevel == 2) {
-                        Communications.correctIncome(rc, 600);
-                    }
                     return true;
                 }
             }
