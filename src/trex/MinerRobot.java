@@ -28,6 +28,7 @@ public strictfp class MinerRobot extends Robot {
         if (!moved && !mined && rc.isMovementReady() && rc.isActionReady()) {
             locationScore *= SCORE_DECAY;
         }
+        Communications.incrementMinerCount(rc);
     }
     
 
