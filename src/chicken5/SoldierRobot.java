@@ -1,4 +1,4 @@
-package trex;
+package chicken5;
 
 import battlecode.common.*;
 
@@ -9,7 +9,7 @@ public strictfp class SoldierRobot extends Robot {
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_TARGET_THRESHOLD = 0.1;
     static final int GIVE_UP_RADIUS_SQUARED = 2;
-    static final boolean MOVE_IF_ATTACK_CD = false;
+    static final boolean MOVE_IF_ATTACK_CD = true;
 
     public SoldierRobot(RobotController rc) {
         super(rc);
@@ -31,32 +31,16 @@ public strictfp class SoldierRobot extends Robot {
     RobotInfo[] nearbyRobots;
     boolean areEnemiesNearby;
     boolean friendlyArchonNearby;
-    MapLocation nearestAlly;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         MapLocation fleeFrom = null;
         areEnemiesNearby = false;
         friendlyArchonNearby = false;
         int fleeDistanceSquared = Integer.MAX_VALUE;
-        nearestAlly = null;
-        int nearestAllyDistance = Integer.MAX_VALUE;
-        int dist;
-        Team team = rc.getTeam();
         for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.team == team) {
-                switch (otherRobot.type) {
-                    case ARCHON:
-                        friendlyArchonNearby = true;
-                        break;
-                    case SOLDIER:
-                    case WATCHTOWER:
-                    case SAGE:
-                        dist = rc.getLocation().distanceSquaredTo(otherRobot.location);
-                        if (dist < nearestAllyDistance) {
-                            nearestAllyDistance = dist;
-                            nearestAlly = otherRobot.location;
-                        }
-                        break;
+            if (otherRobot.team == rc.getTeam()) {
+                if (otherRobot.type == RobotType.ARCHON) {
+                    friendlyArchonNearby = true;
                 }
             } else {
                 areEnemiesNearby = true;
@@ -101,7 +85,7 @@ public strictfp class SoldierRobot extends Robot {
      * Targets the opposing enemy with the lowest health, prioritizing units that can attack;
      * returns null if no such enemy is found.
      **/
-    /*public MapLocation identifyTarget() throws GameActionException {
+    public MapLocation identifyTarget() throws GameActionException {
         if (!areEnemiesNearby) return null;
         MapLocation best = null;
         int health = Integer.MAX_VALUE;
@@ -126,13 +110,13 @@ public strictfp class SoldierRobot extends Robot {
             }
         }
         return best;
-    }*/
+    }
 
     /**
      * Selects an opposing enemy in vision range by the same criteria as identifyTarget.
      */
 
-    /*public MapLocation findTarget() throws GameActionException {
+    public MapLocation findTarget() throws GameActionException {
         if (!areEnemiesNearby) return null;
         MapLocation best = null;
         int health = Integer.MAX_VALUE;
@@ -140,7 +124,8 @@ public strictfp class SoldierRobot extends Robot {
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team != rc.getTeam()) {
                 if (otherRobot.type.canAttack()
-                        && otherRobot.mode.canAct) {
+                        /*&& otherRobot.mode.canAct
+                        && rc.getLocation().isWithinDistanceSquared(otherRobot.location, otherRobot.type.actionRadiusSquared)*/) {
                     if (otherRobot.health < health) {
                         health = otherRobot.health;
                         canAttack = true;
@@ -155,7 +140,7 @@ public strictfp class SoldierRobot extends Robot {
             }
         }
         return best;
-    }*/
+    }
 
     public static final double VALUE_THRESHOLD = 0.1;
 
@@ -189,85 +174,10 @@ public strictfp class SoldierRobot extends Robot {
         }
     }
 
-
-    /**
-     * Targets the opposing enemy with the lowest health, prioritizing units that can attack;
-     * returns null if no such enemy is found.
-     **/
-    public MapLocation identifyTarget() throws GameActionException {
-        if (!areEnemiesNearby) return null;
-        MapLocation best = null;
-        int health = Integer.MAX_VALUE;
-        boolean canAttack = false;
-        int id = Integer.MAX_VALUE;
-        for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.team != rc.getTeam()
-                    && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.SOLDIER.actionRadiusSquared)) {
-
-                if (otherRobot.type.canAttack()
-                        && otherRobot.mode.canAct) {
-                    if (otherRobot.health < health
-                            || (otherRobot.health == health
-                                && otherRobot.ID < id)) {
-                        health = otherRobot.health;
-                        canAttack = true;
-                        best = otherRobot.location;
-                        id = otherRobot.ID;
-                    }
-                } else if (!canAttack) {
-                    if (otherRobot.health < health
-                            || (otherRobot.health == health
-                                && otherRobot.ID < id)) {
-                        health = otherRobot.health;
-                        best = otherRobot.location;
-                        id = otherRobot.ID;
-                    }
-                }
-            }
-        }
-        return best;
-    }
-
-    /**
-     * Selects an opposing enemy in vision range by the same criteria as identifyTarget.
-     */
-
-    public MapLocation findTarget() throws GameActionException {
-        if (!areEnemiesNearby) return null;
-        MapLocation best = null;
-        int health = Integer.MAX_VALUE;
-        int id = Integer.MAX_VALUE;
-        boolean canAttack = false;
-        for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.team != rc.getTeam()) {
-                if (otherRobot.type.canAttack()
-                        && otherRobot.mode.canAct) {
-                    if (otherRobot.health < health
-                            || (otherRobot.health == health
-                                && otherRobot.ID < id)) {
-                        health = otherRobot.health;
-                        canAttack = true;
-                        best = otherRobot.location;
-                        id = otherRobot.ID;
-                    }
-                } else if (!canAttack) {
-                    if (otherRobot.health < health
-                            || (otherRobot.health == health
-                                && otherRobot.ID < id)) {
-                        health = otherRobot.health;
-                        best = otherRobot.location;
-                        id = otherRobot.ID;
-                    }
-                }
-            }
-        }
-        return best;
-    }
-
     public boolean tryMove() throws GameActionException {
         findTargets();
 
-        if(!rc.isActionReady() && !MOVE_IF_ATTACK_CD) {
+        if(rc.getActionCooldownTurns() > 10 && !MOVE_IF_ATTACK_CD) {
             return false;
         }
 

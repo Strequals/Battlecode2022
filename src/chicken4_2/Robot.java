@@ -1,4 +1,4 @@
-package trex;
+package chicken4_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -55,15 +55,6 @@ public strictfp abstract class Robot {
     
     public boolean tryFlee(MapLocation fleeFrom) throws GameActionException {
         Direction d = Navigation.flee(rc, rc.getLocation(), fleeFrom);
-        if (d != null && rc.canMove(d)) {
-            rc.move(d);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean tryFlee(MapLocation fleeFrom, MapLocation nearestAlly) throws GameActionException {
-        Direction d = Navigation.flee(rc, rc.getLocation(), fleeFrom, nearestAlly);
         if (d != null && rc.canMove(d)) {
             rc.move(d);
             return true;

@@ -1,4 +1,4 @@
-package trex;
+package chicken4_2;
 
 import battlecode.common.*;
 
@@ -162,7 +162,7 @@ public strictfp class ArchonRobot extends Robot {
     }
     
     private static final double RESOURCE_PENALTY = 0.0002;
-    private static final double BASE_BUILDER_WEIGHT = 0;
+    private static final double BASE_BUILDER_WEIGHT = 3;
     private static final double MAX_RESOURCE_PENALTY = 1.5;
 
     public double builderWeightMultiplier() throws GameActionException {

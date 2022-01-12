@@ -1,4 +1,4 @@
-package trex;
+package chicken5;
 
 import battlecode.common.*;
 

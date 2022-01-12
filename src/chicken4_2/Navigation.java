@@ -1,4 +1,4 @@
-package trex;
+package chicken4_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -136,42 +136,4 @@ public strictfp class Navigation {
         }
         return best;
     }
-
-    public static double fleeHeuristic(int dsq, int allyDsq, int rubble, double estimatedRubble) {
-        return (Math.sqrt(dsq) - Math.sqrt(allyDsq)) * (1 + estimatedRubble / 10) - (1 + rubble / 10);
-    }
-
-    public static Direction flee(RobotController rc, MapLocation current, MapLocation fleeFrom, MapLocation nearestAlly) throws GameActionException {
-        int dist = current.distanceSquaredTo(fleeFrom);
-        MapLocation next;
-        int nextDist;
-        int rubble;
-        double score;
-        double bestScore = Double.MIN_VALUE;
-        Direction best = null;
-        double estimatedRubble = rubbleEstimate(rc, current);
-        int allyDist;
-        for (Direction d : Robot.directions) {
-            if (rc.canMove(d)) {
-                next = current.add(d);
-                nextDist = next.distanceSquaredTo(fleeFrom);
-                allyDist = next.distanceSquaredTo(nearestAlly);
-                if (nextDist >= dist) {
-                    if (rc.canSenseLocation(next)) {
-                        rubble = rc.senseRubble(next);
-                    } else {
-                        rubble = 100;
-                    }
-                    score = fleeHeuristic(nextDist, allyDist, rubble, estimatedRubble);
-
-                    if (score > bestScore) {
-                        bestScore = score;
-                        best = d;
-                    }
-                }
-            }
-        }
-        return best;
-    }
-
 }
