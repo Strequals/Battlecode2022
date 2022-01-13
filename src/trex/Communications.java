@@ -116,6 +116,11 @@ public strictfp class Communications {
         return ((double) v(index)) * StrictMath.pow(DECAY_FACTOR, rc.getRoundNum() - t(index));
     }
 
+    private static double v_adjusted(int roundNum, int index) throws GameActionException {
+        int aodd = array[2 * index + 1];
+        return ((double) (aodd / 128)) * StrictMath.pow(DECAY_FACTOR, roundNum - (2 * (array[2 * index] / 64) + (aodd % 2)));
+    }
+
     private static MapLocation location(int index) {
         return new MapLocation(x(index), y(index));
     }
@@ -144,12 +149,11 @@ public strictfp class Communications {
         int closestDistance = Integer.MAX_VALUE;
         int d;
 
-        int i;
         int x;
         int y;
-        for (int j = num; j-- > 0;) {
-            i = j + start;
-            v = v_adjusted(rc, i);
+        int roundNum = rc.getRoundNum();
+        for (int i = start + num - 1; i-- > start;) {
+            v = v_adjusted(roundNum, i);
             if (v < lowestValue) {
                 lowestValue = v;
                 lowestIndex = i;
@@ -188,10 +192,9 @@ public strictfp class Communications {
         int highestIndex = 0;
         double highestValue = -Double.MAX_VALUE;
         double v;
-        int i;
-        for (int j = num; j-- > 0;) {
-            i = j + start;
-            v = resourceHeuristic(v_adjusted(rc, i),
+        int roundNum = rc.getRoundNum();
+        for (int i = start + num - 1; i-- > start;) {
+            v = resourceHeuristic(v_adjusted(roundNum, i),
                     (int) (Math.pow(current.x-x(i), 2) + Math.pow(current.y-y(i), 2)));
             if (v > highestValue) {
                 highestValue = v;

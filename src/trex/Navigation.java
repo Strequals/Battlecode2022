@@ -12,8 +12,23 @@ public strictfp class Navigation {
     private static MapLocation previous = null;
     private static int turnsWaited = 0;
     private static final int WAIT_TURNS = 8;
+    private static BFS bfs = null;
 
     public static Direction navigate(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
+        if (bfs == null) {
+            switch (rc.getType()) {
+                case SOLDIER:
+                    bfs = new BFSSoldier();
+            }
+        }
+        if (bfs != null) {
+            int before = Clock.getBytecodeNum();
+            Direction d = bfs.navigateBFS(rc, from, to);
+            rc.setIndicatorString("bfs bytecodes: " + (Clock.getBytecodeNum() - before));
+            if (d != null) {
+                return d;
+            }
+        }
         return navigateFuzzy(rc, from, to);
     }
 

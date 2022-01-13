@@ -183,7 +183,6 @@ public strictfp abstract class Robot {
         Resource r = senseAllNearbyResources();
         if (r != null) {
             Communications.addResourceData(rc, r.location, r.value);
-            rc.setIndicatorString("nearby Resources" + r.value);
         } else {
             Communications.addResourceData(rc, rc.getLocation(), 0);
         }
