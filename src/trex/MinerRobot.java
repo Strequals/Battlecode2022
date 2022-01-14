@@ -183,7 +183,7 @@ public strictfp class MinerRobot extends Robot {
      **/
     public boolean tryMove() throws GameActionException {
         findResources();
-        rc.setIndicatorString("location: " + resourceLocation + ", tabuLoc: " + tabuLocation + "scoutProb: " + getScoutProbability());
+        if (!rc.isMovementReady()) return false;
         if (!rc.getLocation().equals(resourceLocation)) {
             Direction d = null;
             if (rc.getLocation().distanceSquaredTo(resourceLocation) > 2) {
@@ -196,7 +196,7 @@ public strictfp class MinerRobot extends Robot {
                 return true;
             }
         } else {
-            // TODO: try moving in random direction or something here
+            // TODO: try moving to lower rubble here
         }
         return false;
     }

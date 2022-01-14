@@ -209,20 +209,29 @@ public strictfp class ArchonRobot extends Robot {
             case MINER:
                 Resource r = Communications.readResourceData(rc);
                 if (r != null) {
-                    d = rc.getLocation().directionTo(r.location);
+                    d = Navigation.navigate(rc, rc.getLocation(), r.location);
+                    if (d == null) {
+                        d = rc.getLocation().directionTo(r.location);
+                    }
                 } else {
-                    d = getRandomDirection();
+                    d = getDirectionOfLeastRubble();
                 }
                 break;
             case SOLDIER:
                 if (nearestEnemy != null) {
-                    d = rc.getLocation().directionTo(nearestEnemy);
+                    d = Navigation.navigate(rc, rc.getLocation(), nearestEnemy);
+                    if (d == null) {
+                        d = rc.getLocation().directionTo(nearestEnemy);
+                    }
                 } else {
                     Resource s = Communications.readEnemiesData(rc);
                     if (s != null) {
-                        d = rc.getLocation().directionTo(s.location);
+                        d = Navigation.navigate(rc, rc.getLocation(), s.location);
+                        if (d == null) {
+                            d = rc.getLocation().directionTo(s.location);
+                        }
                     } else {
-                        d = getRandomDirection();
+                        d = getDirectionOfLeastRubble();
                     }
                 }
                 break;
@@ -230,7 +239,7 @@ public strictfp class ArchonRobot extends Robot {
                 if (nearestEnemy != null) {
                     d = nearestEnemy.directionTo(rc.getLocation());
                 } else {
-                    d = getRandomDirection();
+                    d = getDirectionOfLeastRubble();
                 }
         }
 
