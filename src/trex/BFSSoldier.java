@@ -2,30 +2,28 @@ package trex;
 import battlecode.common.*;
 public strictfp class BFSSoldier extends BFS {
     public Direction navigateBFS(RobotController rc, MapLocation source, MapLocation target) throws GameActionException {
-        MapLocation l_0_0 = source;
-        double v_0_0 = 0;
-        MapLocation l_n1_n1 = l_0_0.add(Direction.SOUTHWEST);
+        MapLocation l_n1_n1 = source.add(Direction.SOUTHWEST);
         double v_n1_n1 = 1000000000;
         Direction d_n1_n1 = null;
-        MapLocation l_n1_p1 = l_0_0.add(Direction.NORTHWEST);
+        MapLocation l_n1_p1 = source.add(Direction.NORTHWEST);
         double v_n1_p1 = 1000000000;
         Direction d_n1_p1 = null;
-        MapLocation l_0_n1 = l_0_0.add(Direction.SOUTH);
+        MapLocation l_0_n1 = source.add(Direction.SOUTH);
         double v_0_n1 = 1000000000;
         Direction d_0_n1 = null;
-        MapLocation l_0_p1 = l_0_0.add(Direction.NORTH);
+        MapLocation l_0_p1 = source.add(Direction.NORTH);
         double v_0_p1 = 1000000000;
         Direction d_0_p1 = null;
-        MapLocation l_p1_n1 = l_0_0.add(Direction.SOUTHEAST);
+        MapLocation l_p1_n1 = source.add(Direction.SOUTHEAST);
         double v_p1_n1 = 1000000000;
         Direction d_p1_n1 = null;
-        MapLocation l_p1_p1 = l_0_0.add(Direction.NORTHEAST);
+        MapLocation l_p1_p1 = source.add(Direction.NORTHEAST);
         double v_p1_p1 = 1000000000;
         Direction d_p1_p1 = null;
-        MapLocation l_n1_0 = l_0_0.add(Direction.WEST);
+        MapLocation l_n1_0 = source.add(Direction.WEST);
         double v_n1_0 = 1000000000;
         Direction d_n1_0 = null;
-        MapLocation l_p1_0 = l_0_0.add(Direction.EAST);
+        MapLocation l_p1_0 = source.add(Direction.EAST);
         double v_p1_0 = 1000000000;
         Direction d_p1_0 = null;
         MapLocation l_n2_n2 = l_n1_n1.add(Direction.SOUTHWEST);
@@ -209,35 +207,35 @@ public strictfp class BFSSoldier extends BFS {
         double v_p4_p2 = 1000000000;
         Direction d_p4_p2 = null;
         if (rc.onTheMap(l_n1_p1) && !rc.canSenseRobotAtLocation(l_n1_p1)) {
-            v_n1_p1 = v_0_0 + 1.0 + rc.senseRubble(l_n1_p1) / 10.0;
+            v_n1_p1 = 1.0 + rc.senseRubble(l_n1_p1) / 10.0;
             d_n1_p1 = Direction.NORTHWEST;
         }
         if (rc.onTheMap(l_0_p1) && !rc.canSenseRobotAtLocation(l_0_p1)) {
-            v_0_p1 = v_0_0 + 1.0 + rc.senseRubble(l_0_p1) / 10.0;
+            v_0_p1 = 1.0 + rc.senseRubble(l_0_p1) / 10.0;
             d_0_p1 = Direction.NORTH;
         }
         if (rc.onTheMap(l_p1_p1) && !rc.canSenseRobotAtLocation(l_p1_p1)) {
-            v_p1_p1 = v_0_0 + 1.0 + rc.senseRubble(l_p1_p1) / 10.0;
+            v_p1_p1 = 1.0 + rc.senseRubble(l_p1_p1) / 10.0;
             d_p1_p1 = Direction.NORTHEAST;
         }
         if (rc.onTheMap(l_p1_0) && !rc.canSenseRobotAtLocation(l_p1_0)) {
-            v_p1_0 = v_0_0 + 1.0 + rc.senseRubble(l_p1_0) / 10.0;
+            v_p1_0 = 1.0 + rc.senseRubble(l_p1_0) / 10.0;
             d_p1_0 = Direction.EAST;
         }
         if (rc.onTheMap(l_p1_n1) && !rc.canSenseRobotAtLocation(l_p1_n1)) {
-            v_p1_n1 = v_0_0 + 1.0 + rc.senseRubble(l_p1_n1) / 10.0;
+            v_p1_n1 = 1.0 + rc.senseRubble(l_p1_n1) / 10.0;
             d_p1_n1 = Direction.SOUTHEAST;
         }
         if (rc.onTheMap(l_0_n1) && !rc.canSenseRobotAtLocation(l_0_n1)) {
-            v_0_n1 = v_0_0 + 1.0 + rc.senseRubble(l_0_n1) / 10.0;
+            v_0_n1 = 1.0 + rc.senseRubble(l_0_n1) / 10.0;
             d_0_n1 = Direction.SOUTH;
         }
         if (rc.onTheMap(l_n1_n1) && !rc.canSenseRobotAtLocation(l_n1_n1)) {
-            v_n1_n1 = v_0_0 + 1.0 + rc.senseRubble(l_n1_n1) / 10.0;
+            v_n1_n1 = 1.0 + rc.senseRubble(l_n1_n1) / 10.0;
             d_n1_n1 = Direction.SOUTHWEST;
         }
         if (rc.onTheMap(l_n1_0) && !rc.canSenseRobotAtLocation(l_n1_0)) {
-            v_n1_0 = v_0_0 + 1.0 + rc.senseRubble(l_n1_0) / 10.0;
+            v_n1_0 = 1.0 + rc.senseRubble(l_n1_0) / 10.0;
             d_n1_0 = Direction.WEST;
         }
         if (rc.onTheMap(l_n2_p2) && !rc.canSenseRobotAtLocation(l_n2_p2)) {
@@ -1222,7 +1220,7 @@ public strictfp class BFSSoldier extends BFS {
         }
         double e_p4_p2 = (initialDist - Math.sqrt(l_p4_p2.distanceSquaredTo(target))) / v_p4_p2;
         if (e_p4_p2 > bestEstimate) {
-            bestEstimate = e_p4_p2;
+            //bestEstimate = e_p4_p2;
             best = d_p4_p2;
         }
         return best;

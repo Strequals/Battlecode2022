@@ -92,15 +92,41 @@ public strictfp class MinerRobot extends Robot {
         MapLocation me = rc.getLocation();
         boolean mined = false;
         MapLocation mineLocation;
-        while (rc.canMineGold(me)) {
-            rc.mineGold(me);
-            mined = true;
+        int turnsCanMine = -StrictMath.floorDiv(rc.getActionCooldownTurns() - 10, (int) ((1.0 + rc.senseRubble(me) / 10.0) * 2.0));
+
+        int maxMines = StrictMath.min(turnsCanMine, rc.senseGold(me));
+        switch (maxMines) {
+            case 5:
+                rc.mineGold(me);
+            case 4:
+                rc.mineGold(me);
+            case 3:
+                rc.mineGold(me);
+            case 2:
+                rc.mineGold(me);
+            case 1:
+                rc.mineGold(me);
+                mined = true;
+                turnsCanMine -= maxMines;
         }
         for (Direction d : directions) {
             mineLocation = me.add(d);
-            while (rc.canMineGold(mineLocation)) {
-                rc.mineGold(mineLocation);
-                mined = true;
+            if (rc.onTheMap(mineLocation)) {
+                maxMines = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+                switch (maxMines) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                        mined = true;
+                        turnsCanMine -= maxMines;
+                }
             }
         }
         return mined;
@@ -110,16 +136,42 @@ public strictfp class MinerRobot extends Robot {
         MapLocation me = rc.getLocation();
         boolean mined = false;
         MapLocation mineLocation;
-        while (rc.isActionReady() && rc.senseLead(me) > 1) {
-            rc.mineLead(me);
-            mined = true;
+        int turnsCanMine = -StrictMath.floorDiv(rc.getActionCooldownTurns() - 10, (int) ((1.0 + rc.senseRubble(me) / 10.0) * 2.0));
+
+        System.out.println("turnsCanMine: " + turnsCanMine + "\nCooldown turns: " + rc.getActionCooldownTurns() + "\nRubble:" + rc.senseRubble(me));
+
+        int maxMines = StrictMath.min(turnsCanMine, rc.senseLead(me) - 1);
+        switch (maxMines) {
+            case 5:
+                rc.mineLead(me);
+            case 4:
+                rc.mineLead(me);
+            case 3:
+                rc.mineLead(me);
+            case 2:
+                rc.mineLead(me);
+            case 1:
+                rc.mineLead(me);
+                mined = true;
+                turnsCanMine -= maxMines;
         }
         for (Direction d : directions) {
             mineLocation = me.add(d);
             if (rc.onTheMap(mineLocation)) {
-                while (rc.isActionReady() && rc.senseLead(mineLocation) > 1) {
-                    rc.mineLead(mineLocation);
-                    mined = true;
+                maxMines = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation) - 1);
+                switch (maxMines) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                        mined = true;
+                        turnsCanMine -= maxMines;
                 }
             }
         }
