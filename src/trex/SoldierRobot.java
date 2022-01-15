@@ -21,9 +21,41 @@ public strictfp class SoldierRobot extends Robot {
         processNearbyRobots();
         broadcastNearbyResources();
         
-        boolean moved = tryMove();
+        /*Direction moved = tryMove();
         boolean attacked = tryAttack();
         if (!areEnemiesNearby && !moved && !attacked && rc.isMovementReady() && rc.isActionReady()) {
+            locationScore *= SCORE_DECAY;
+        }*/
+
+        MapLocation attackBefore = tryAttack();
+        Direction moveDir = tryMove();
+        boolean attacked = false;
+        if (moveDir != null) {
+            MapLocation finalLoc = rc.getLocation().add(moveDir);
+            MapLocation attackAfter = tryAttack(finalLoc);
+            if (attackAfter != null) {
+                if (attackBefore == null || rc.senseRubble(finalLoc) <= rc.senseRubble(rc.getLocation())) {
+                    rc.move(moveDir);
+                    rc.attack(attackAfter);
+                    attacked = true;
+                } else {
+                    rc.attack(attackBefore);
+                    rc.move(moveDir);
+                    attacked = true;
+                }
+            } else if (attackBefore != null) {
+                rc.attack(attackBefore);
+                rc.move(moveDir);
+                attacked = true;
+            } else {
+                rc.move(moveDir);
+            }
+        } else if (attackBefore != null) {
+            rc.attack(attackBefore);
+            attacked = true;
+        }
+
+        if (!areEnemiesNearby && (moveDir == null) && rc.isMovementReady() && rc.isActionReady()) {
             locationScore *= SCORE_DECAY;
         }
     }
@@ -32,16 +64,26 @@ public strictfp class SoldierRobot extends Robot {
     boolean areEnemiesNearby;
     boolean friendlyArchonNearby;
     MapLocation nearestAlly;
+    MapLocation nearestEnemy;
+    MapLocation fleeFrom;
+    int fleeAttackRadius;
+    int maxDamageTaken;
+    int allies;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
-        MapLocation fleeFrom = null;
+        fleeFrom = null;
         areEnemiesNearby = false;
         friendlyArchonNearby = false;
         int fleeDistanceSquared = Integer.MAX_VALUE;
         nearestAlly = null;
         int nearestAllyDistance = Integer.MAX_VALUE;
+        nearestEnemy = null;
+        int nearestEnemyDistance = Integer.MAX_VALUE;
         int dist;
         Team team = rc.getTeam();
+        maxDamageTaken = 0;
+        int dmg;
+        allies = 0;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == team) {
                 switch (otherRobot.type) {
@@ -56,6 +98,7 @@ public strictfp class SoldierRobot extends Robot {
                             nearestAllyDistance = dist;
                             nearestAlly = otherRobot.location;
                         }
+                        allies++;
                         break;
                 }
             } else {
@@ -72,29 +115,40 @@ public strictfp class SoldierRobot extends Robot {
                     if (dsq < fleeDistanceSquared) {
                         fleeDistanceSquared = dsq;
                         fleeFrom = attackedFrom;
+                        fleeAttackRadius = otherRobot.type.actionRadiusSquared;
                     }
+                    dmg = otherRobot.type.getDamage(otherRobot.level);
+                    if (dmg > 0) maxDamageTaken += dmg;
+                }
+                int otherDist = otherRobot.location.distanceSquaredTo(rc.getLocation());
+                if (otherDist < nearestEnemyDistance) {
+                    nearestEnemyDistance = otherDist;
+                    nearestEnemy = otherRobot.location;
                 }
             }
         }
 
-        if (fleeFrom != null && !friendlyArchonNearby) {
-            tryAttack();
-            tryFlee(fleeFrom);
-            targetLocation = null;
-        }
-        
         processAndBroadcastEnemies(nearbyRobots);
     }
 
-    public boolean tryAttack() throws GameActionException {
+    public MapLocation tryAttack() throws GameActionException {
         if (rc.isActionReady()) {
             MapLocation target = identifyTarget();
-            if (target != null && rc.canAttack(target)) {
-                rc.attack(target);
-                return true;
+            if (target != null) {
+                return target;
             }
         }
-        return false;
+        return null;
+    }
+
+    public MapLocation tryAttack(MapLocation next) throws GameActionException {
+        if (rc.isActionReady()) {
+            MapLocation target = identifyTarget(next);
+            if (target != null) {
+                return target;
+            }
+        }
+        return null;
     }
     
     /**
@@ -229,6 +283,43 @@ public strictfp class SoldierRobot extends Robot {
     }
 
     /**
+     * Same as identifyTarget(), but is centered around next.
+     **/
+    public MapLocation identifyTarget(MapLocation next) throws GameActionException {
+        if (!areEnemiesNearby) return null;
+        MapLocation best = null;
+        int health = Integer.MAX_VALUE;
+        boolean canAttack = false;
+        int id = Integer.MAX_VALUE;
+        for (RobotInfo otherRobot : nearbyRobots) {
+            if (otherRobot.team != rc.getTeam()
+                    && next.isWithinDistanceSquared(otherRobot.location, RobotType.SOLDIER.actionRadiusSquared)) {
+
+                if (otherRobot.type.canAttack()
+                        && otherRobot.mode.canAct) {
+                    if (otherRobot.health < health
+                            || (otherRobot.health == health
+                                && otherRobot.ID < id)) {
+                        health = otherRobot.health;
+                        canAttack = true;
+                        best = otherRobot.location;
+                        id = otherRobot.ID;
+                    }
+                } else if (!canAttack) {
+                    if (otherRobot.health < health
+                            || (otherRobot.health == health
+                                && otherRobot.ID < id)) {
+                        health = otherRobot.health;
+                        best = otherRobot.location;
+                        id = otherRobot.ID;
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    /**
      * Selects an opposing enemy in vision range by the same criteria as identifyTarget.
      */
 
@@ -264,20 +355,72 @@ public strictfp class SoldierRobot extends Robot {
         return best;
     }
 
-    public boolean tryMove() throws GameActionException {
-        findTargets();
-
-        if(!rc.isActionReady() && !MOVE_IF_ATTACK_CD) {
-            return false;
-        }
-
-        if (!rc.getLocation().isWithinDistanceSquared(targetLocation, GIVE_UP_RADIUS_SQUARED)) {
-            Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
-            if (d != null && rc.canMove(d)) {
-                rc.move(d);
-                return true;
+    public boolean isAllyInRange(MapLocation l, int dsq) {
+        Team team = rc.getTeam();
+        for (RobotInfo nearbyRobot : nearbyRobots) {
+            if (nearbyRobot.team == team) {
+                switch (nearbyRobot.type) {
+                    case SOLDIER:
+                    case SAGE:
+                    case WATCHTOWER:
+                        if (nearbyRobot.location.isWithinDistanceSquared(l, dsq)) {
+                            return true;
+                        }
+                }
             }
         }
         return false;
+    }
+
+    public Direction tryMove() throws GameActionException {
+        findTargets();
+
+        if (!rc.isMovementReady()) return null;
+
+        if (fleeFrom != null
+                && (!isAllyInRange(fleeFrom, fleeAttackRadius) || maxDamageTaken >= rc.getHealth())
+                && !friendlyArchonNearby) {
+            return Navigation.flee(rc, rc.getLocation(), fleeFrom);
+        }
+
+        /*if(!rc.isActionReady() && areEnemiesNearby) {
+            return false;
+        }
+
+        if (rc.getLocation()*/
+
+        int targetDistance = rc.getLocation().distanceSquaredTo(targetLocation);
+
+        if (!areEnemiesNearby || (targetDistance > RobotType.SOLDIER.actionRadiusSquared && rc.isActionReady())) {
+            Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
+            if (d != null && rc.canMove(d)) {
+                return d;
+            }
+        }
+
+        if (nearestEnemy != null) {
+            if (rc.isActionReady()) {
+                //Move to lower rubble and keep attacking
+                Direction lowest = getDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared);
+                if (lowest != null) {
+                    MapLocation loc = rc.getLocation().add(lowest);
+                    if (rc.senseRubble(loc) > rc.senseRubble(rc.getLocation())) {
+                        return null;
+                    }
+                    return lowest;
+                }
+            } else {
+                //Move to lower rubble to prepare for attacking
+                Direction lowest = getDirectionOfLeastRubble();
+                if (lowest != null) {
+                    MapLocation loc = rc.getLocation().add(lowest);
+                    if (rc.senseRubble(loc) > rc.senseRubble(rc.getLocation())) {
+                        return null;
+                    }
+                    return lowest;
+                }
+            }
+        }
+        return null;
     }
 }

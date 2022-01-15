@@ -119,6 +119,79 @@ public strictfp abstract class Robot {
         return best;
     }
 
+
+    public Direction getDirectionOfLeastRubbleWithinDistanceSquaredOf(MapLocation center, int dsq) throws GameActionException {
+        MapLocation current = rc.getLocation();
+        MapLocation n = current.add(Direction.NORTH);
+        MapLocation ne = current.add(Direction.NORTHEAST);
+        MapLocation e = current.add(Direction.EAST);
+        MapLocation se = current.add(Direction.SOUTHEAST);
+        MapLocation s = current.add(Direction.SOUTH);
+        MapLocation sw = current.add(Direction.SOUTHWEST);
+        MapLocation w = current.add(Direction.WEST);
+        MapLocation nw = current.add(Direction.NORTHWEST);
+        int leastRubble = 101;
+        Direction best = null;
+        int r;
+        if (n.distanceSquaredTo(center) <= dsq && rc.onTheMap(n) && !rc.canSenseRobotAtLocation(n)) {
+            r = rc.senseRubble(n);
+            if (r < leastRubble) {
+                best = Direction.NORTH;
+                leastRubble = r;
+            }
+        }
+        if (ne.distanceSquaredTo(center) <= dsq && rc.onTheMap(ne) && !rc.canSenseRobotAtLocation(ne)) {
+            r = rc.senseRubble(ne);
+            if (r < leastRubble) {
+                best = Direction.NORTHEAST;
+                leastRubble = r;
+            }
+        }
+        if (e.distanceSquaredTo(center) <= dsq && rc.onTheMap(e) && !rc.canSenseRobotAtLocation(e)) {
+            r = rc.senseRubble(e);
+            if (r < leastRubble) {
+                best = Direction.EAST;
+                leastRubble = r;
+            }
+        }
+        if (se.distanceSquaredTo(center) <= dsq && rc.onTheMap(se) && !rc.canSenseRobotAtLocation(se)) {
+            r = rc.senseRubble(se);
+            if (r < leastRubble) {
+                best = Direction.SOUTHEAST;
+                leastRubble = r;
+            }
+        }
+        if (s.distanceSquaredTo(center) <= dsq && rc.onTheMap(s) && !rc.canSenseRobotAtLocation(s)) {
+            r = rc.senseRubble(s);
+            if (r < leastRubble) {
+                best = Direction.SOUTH;
+                leastRubble = r;
+            }
+        }
+        if (sw.distanceSquaredTo(center) <= dsq && rc.onTheMap(sw) && !rc.canSenseRobotAtLocation(sw)) {
+            r = rc.senseRubble(sw);
+            if (r < leastRubble) {
+                best = Direction.SOUTHWEST;
+                leastRubble = r;
+            }
+        }
+        if (w.distanceSquaredTo(center) <= dsq && rc.onTheMap(w) && !rc.canSenseRobotAtLocation(w)) {
+            r = rc.senseRubble(w);
+            if (r < leastRubble) {
+                best = Direction.WEST;
+                leastRubble = r;
+            }
+        }
+        if (nw.distanceSquaredTo(center) <= dsq && rc.onTheMap(nw) && !rc.canSenseRobotAtLocation(nw)) {
+            r = rc.senseRubble(nw);
+            if (r < leastRubble) {
+                best = Direction.NORTHWEST;
+                leastRubble = r;
+            }
+        }
+        return best;
+    }
+
     public static int getChebyshevDistance(MapLocation l1, MapLocation l2) {
         int dx = l1.x - l2.x;
         int dy = l1.y - l2.y;
