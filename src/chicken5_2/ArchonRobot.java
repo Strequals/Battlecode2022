@@ -1,4 +1,4 @@
-package trex;
+package chicken5_2;
 
 import battlecode.common.*;
 
@@ -13,7 +13,7 @@ public strictfp class ArchonRobot extends Robot {
     private boolean exploring;
     
     private int explorationMiners;
-    private static final int BASE_MIN_MINER = 2;
+    private static final int BASE_MIN_MINER = 8;
     private static final double MINER_RATIO = 0.004;
 
     private static final double WEIGHT_DECAY = 0.5;
@@ -99,13 +99,14 @@ public strictfp class ArchonRobot extends Robot {
         }
         processAndBroadcastEnemies(nearbyRobots);
         if (enemiesNearby) {
+            Communications.maxArchonPriority(rc);
             soldierWeight += PANIC_SOLDIER_WEIGHT;
         }
     }
 
-    private static final double RESOURCE_WEIGHT = 0.0001;
+    private static final double RESOURCE_WEIGHT = 0.00005;
     private static final double BASE_MINER_WEIGHT = 0.4;
-    private static final double MAX_RESOURCE_BONUS = 0.8;
+    private static final double MAX_RESOURCE_BONUS = 0.4;
     private static final double NOT_ENOUGH_MINERS_BONUS = 0.2;
     private static final double MAKE_SOLDIERS_THRESHOLD = 2;
 
@@ -208,29 +209,20 @@ public strictfp class ArchonRobot extends Robot {
             case MINER:
                 Resource r = Communications.readResourceData(rc);
                 if (r != null) {
-                    d = Navigation.navigate(rc, rc.getLocation(), r.location);
-                    if (d == null) {
-                        d = rc.getLocation().directionTo(r.location);
-                    }
+                    d = rc.getLocation().directionTo(r.location);
                 } else {
-                    d = getDirectionOfLeastRubble();
+                    d = getRandomDirection();
                 }
                 break;
             case SOLDIER:
                 if (nearestEnemy != null) {
-                    d = Navigation.navigate(rc, rc.getLocation(), nearestEnemy);
-                    if (d == null) {
-                        d = rc.getLocation().directionTo(nearestEnemy);
-                    }
+                    d = rc.getLocation().directionTo(nearestEnemy);
                 } else {
                     Resource s = Communications.readEnemiesData(rc);
                     if (s != null) {
-                        d = Navigation.navigate(rc, rc.getLocation(), s.location);
-                        if (d == null) {
-                            d = rc.getLocation().directionTo(s.location);
-                        }
+                        d = rc.getLocation().directionTo(s.location);
                     } else {
-                        d = getDirectionOfLeastRubble();
+                        d = getRandomDirection();
                     }
                 }
                 break;
@@ -238,7 +230,7 @@ public strictfp class ArchonRobot extends Robot {
                 if (nearestEnemy != null) {
                     d = nearestEnemy.directionTo(rc.getLocation());
                 } else {
-                    d = getDirectionOfLeastRubble();
+                    d = getRandomDirection();
                 }
         }
 
@@ -260,11 +252,8 @@ public strictfp class ArchonRobot extends Robot {
             Communications.zeroArchonPriority(rc);
             return true;
         }
-        if (enemiesNearby && type == RobotType.SOLDIER) {
-            Communications.maxArchonPriority(rc);
-        } else {
-            Communications.incrementArchonPriority(rc);
-        }
+
+        Communications.incrementArchonPriority(rc);
         return false;
     }
 

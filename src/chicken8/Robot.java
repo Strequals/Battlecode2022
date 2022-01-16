@@ -1,4 +1,4 @@
-package trex;
+package chicken8;
 
 import battlecode.common.*;
 import java.util.Random;

@@ -1,4 +1,4 @@
-package trex;
+package chicken7;
 
 import battlecode.common.*;
 
@@ -14,8 +14,6 @@ public strictfp class SoldierRobot extends Robot {
     public SoldierRobot(RobotController rc) {
         super(rc);
     }
-    
-    public static final int ATTACK_DANGEROUS_RUBBLE = 25;
 
     @Override
     public void run() throws GameActionException {
@@ -30,25 +28,13 @@ public strictfp class SoldierRobot extends Robot {
         }*/
 
         MapLocation attackBefore = tryAttack();
-        boolean isBeforeDangerous = false;
-        if (attackBefore != null) {
-            isBeforeDangerous = rc.senseRobotAtLocation(attackBefore).type.canAttack();
-        }
         Direction moveDir = tryMove();
         boolean attacked = false;
         if (moveDir != null) {
             MapLocation finalLoc = rc.getLocation().add(moveDir);
             MapLocation attackAfter = tryAttack(finalLoc);
-            boolean isAfterDangerous = false;
             if (attackAfter != null) {
-                isAfterDangerous = rc.senseRobotAtLocation(attackAfter).type.canAttack();
-            }
-            if (attackAfter != null) {
-                int finalRubble = rc.senseRubble(finalLoc);
-                int currentRubble = rc.senseRubble(rc.getLocation());
-                if (attackBefore == null
-                        || (finalRubble <= currentRubble && (!isBeforeDangerous || isAfterDangerous))
-                        || (finalRubble - currentRubble <= ATTACK_DANGEROUS_RUBBLE && isAfterDangerous && !isBeforeDangerous)) {
+                if (attackBefore == null || rc.senseRubble(finalLoc) <= rc.senseRubble(rc.getLocation())) {
                     rc.move(moveDir);
                     rc.attack(attackAfter);
                     attacked = true;
@@ -73,7 +59,7 @@ public strictfp class SoldierRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }
 
-        rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
+        //rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore);
     }
 
     RobotInfo[] nearbyRobots;
@@ -86,7 +72,6 @@ public strictfp class SoldierRobot extends Robot {
     int fleeAttackRadius;
     int maxDamageTaken;
     int allies;
-    int turnsSinceSeenDangerousEnemy = 0;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         fleeFrom = null;
@@ -151,12 +136,6 @@ public strictfp class SoldierRobot extends Robot {
                         areDangerousEnemies = true;
                 }
             }
-        }
-
-        if (areDangerousEnemies) {
-            turnsSinceSeenDangerousEnemy = 0;
-        } else {
-            turnsSinceSeenDangerousEnemy++;
         }
 
         processAndBroadcastEnemies(nearbyRobots);
@@ -256,29 +235,13 @@ public strictfp class SoldierRobot extends Robot {
         
         MapLocation t = identifyTarget();
         if (t != null) {
-            RobotInfo r = rc.senseRobotAtLocation(t);
-            if (r.type.canAttack()) {
-                targetLocation = t;
+            targetLocation = t;
+            if (areDangerousEnemies) {
                 locationScore = 2;
-            } else if (locationScore < 1) {
-                targetLocation = t;
+            } else {
                 locationScore = 0.5;
             }
         }
-
-        if (targetLocation == null || locationScore < 1) {
-            t = findTarget();
-            if (t != null) {
-                if (areDangerousEnemies) {
-                    targetLocation = t;
-                    locationScore = 2;
-                } else if (locationScore < 1) {
-                    targetLocation = t;
-                    locationScore = 0.5;
-                }
-            }
-        }
-
         if (targetLocation == null || locationScore < 1) {
             Resource r = Communications.readEnemiesData(rc);
             if (r != null && r.value > 0 && (targetLocation == null || r.location.distanceSquaredTo(rc.getLocation()) <= DISTANCE_THRESHOLD)) {
@@ -315,9 +278,9 @@ public strictfp class SoldierRobot extends Robot {
 
                 if (otherRobot.type.canAttack()
                         && otherRobot.mode.canAct) {
-                    if (!canAttack || (otherRobot.health < health
+                    if (otherRobot.health < health
                             || (otherRobot.health == health
-                                && otherRobot.ID < id))) {
+                                && otherRobot.ID < id)) {
                         health = otherRobot.health;
                         canAttack = true;
                         best = otherRobot.location;
@@ -352,9 +315,9 @@ public strictfp class SoldierRobot extends Robot {
 
                 if (otherRobot.type.canAttack()
                         && otherRobot.mode.canAct) {
-                    if (!canAttack || (otherRobot.health < health
+                    if (otherRobot.health < health
                             || (otherRobot.health == health
-                                && otherRobot.ID < id))) {
+                                && otherRobot.ID < id)) {
                         health = otherRobot.health;
                         canAttack = true;
                         best = otherRobot.location;
@@ -427,26 +390,15 @@ public strictfp class SoldierRobot extends Robot {
         return false;
     }
 
-    public static final int MAX_RUBBLE_INCREASE = 10;
-    public static final int TURNS_AVOID_RUBBLE = 6;
-
     public Direction tryMove() throws GameActionException {
         findTargets();
-
-        MapLocation current = rc.getLocation();
 
         if (!rc.isMovementReady()) return null;
 
         if (fleeFrom != null
                 && (!isAllyInRange(fleeFrom, fleeAttackRadius) || maxDamageTaken >= rc.getHealth())
                 && !friendlyArchonNearby) {
-
-            Direction fleeDir = Navigation.flee(rc, current, fleeFrom);
-            MapLocation fleeLoc = current.add(fleeDir);
-            if (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE || rc.senseRubble(fleeLoc) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE) {
-                return fleeDir;
-            }
-            return null;
+            return Navigation.flee(rc, rc.getLocation(), fleeFrom);
         }
 
         /*if(!rc.isActionReady() && areEnemiesNearby) {
@@ -457,9 +409,12 @@ public strictfp class SoldierRobot extends Robot {
 
         int targetDistance = rc.getLocation().distanceSquaredTo(targetLocation);
 
-        boolean engage = areEnemiesNearby && targetDistance > RobotType.SOLDIER.actionRadiusSquared;
-
-        
+        if (!areEnemiesNearby || (targetDistance > RobotType.SOLDIER.actionRadiusSquared && rc.isActionReady())) {
+            Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
+            if (d != null && rc.canMove(d)) {
+                return d;
+            }
+        }
 
         if (nearestEnemy != null) {
             if (rc.isActionReady()) {
@@ -467,29 +422,21 @@ public strictfp class SoldierRobot extends Robot {
                 Direction lowest = getDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared);
                 if (lowest != null) {
                     MapLocation loc = rc.getLocation().add(lowest);
-                    if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
-                        return lowest;
+                    if (rc.senseRubble(loc) > rc.senseRubble(rc.getLocation())) {
+                        return null;
                     }
+                    return lowest;
                 }
             } else {
                 //Move to lower rubble to prepare for attacking
                 Direction lowest = getDirectionOfLeastRubble();
                 if (lowest != null) {
                     MapLocation loc = rc.getLocation().add(lowest);
-                    if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
-                        return lowest;
+                    if (rc.senseRubble(loc) > rc.senseRubble(rc.getLocation())) {
+                        return null;
                     }
+                    return lowest;
                 }
-            }
-        }
-        
-        if (!areDangerousEnemies || current.distanceSquaredTo(targetLocation) > RobotType.SOLDIER.actionRadiusSquared) {
-            Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
-            MapLocation to = current.add(d);
-            if (d != null && rc.canMove(d) &&
-                    (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE
-                     || rc.senseRubble(to) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE)) {
-                return d;
             }
         }
         return null;
