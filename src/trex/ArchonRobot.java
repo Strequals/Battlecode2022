@@ -37,6 +37,7 @@ public strictfp class ArchonRobot extends Robot {
         tryBuild();
         tryRepair();
         Communications.writeArchonPriority(rc);
+        Communications.writeArchonData(rc);
         //rc.setIndicatorString(Communications.archonNum + ", prty:" + Communications.archonPriority);
         /*rc.setIndicatorString(Communications.readArchonPriority(rc, 0) + " " 
                 + Communications.readArchonPriority(rc, 1) + " "
@@ -51,6 +52,7 @@ public strictfp class ArchonRobot extends Robot {
     public void tryActivate() throws GameActionException {
         if(activeArchon) {
             Communications.updateMinerCount(rc);
+            Communications.clearOtherArchonData(rc);
             updateIncome();
         }
         else {

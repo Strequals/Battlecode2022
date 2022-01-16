@@ -5,6 +5,7 @@ public strictfp class Communications {
     private static final int RESOURCE_NUM = 8;
     private static final int ENEMIES_START = 8;
     private static final int ENEMIES_NUM = 8;
+    private static final int ARCHON_DATA_START = 55;
     private static final int PREV_INCOME_INDEX = 59;
     private static final int INCOME_INDEX = 60;
     private static final int MINER_COUNT_PREV = 61;
@@ -301,5 +302,95 @@ public strictfp class Communications {
     public static void maxArchonPriority(RobotController rc) throws GameActionException {
         archonPriority = 15;
         writeArchonPriority(rc);
+    }
+    public static void writeArchonData(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        int val = ((4096 + rc.getLocation().x * 64 + rc.getLocation().y));
+        System.out.println(val);
+        int index = ARCHON_DATA_START + archonNum;
+        array[index] = val;
+        rc.writeSharedArray(index, val);
+    }
+    public static void clearOtherArchonData(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        switch (archonNum) {
+            case 0:
+                array[ARCHON_DATA_START + 1] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
+                array[ARCHON_DATA_START + 2] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
+                array[ARCHON_DATA_START + 3] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                break;
+            case 1:
+                array[ARCHON_DATA_START] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
+                array[ARCHON_DATA_START + 2] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
+                array[ARCHON_DATA_START + 3] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                break;
+            case 2:
+                array[ARCHON_DATA_START] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
+                array[ARCHON_DATA_START + 1] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
+                array[ARCHON_DATA_START + 3] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                break;
+            case 3:
+                array[ARCHON_DATA_START] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
+                array[ARCHON_DATA_START + 1] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
+                array[ARCHON_DATA_START + 2] = 0;
+                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                break;
+        }
+    }
+    public static MapLocation getClosestArchon(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        MapLocation current = rc.getLocation();
+        MapLocation closest = null;
+        int dist = Integer.MAX_VALUE;
+        MapLocation archonLoc;
+        int d;
+        int val = array[ARCHON_DATA_START];
+        if (((val > 4096))) {
+            archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
+            d = current.distanceSquaredTo(archonLoc);
+            if (d < dist) {
+                closest = archonLoc;
+                dist = d;
+            }
+        }
+        val = array[ARCHON_DATA_START + 1];
+        if (((val > 4096))) {
+            archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
+            d = current.distanceSquaredTo(archonLoc);
+            if (d < dist) {
+                closest = archonLoc;
+                dist = d;
+            }
+        }
+        val = array[ARCHON_DATA_START + 2];
+        if (((val > 4096))) {
+            archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
+            d = current.distanceSquaredTo(archonLoc);
+            if (d < dist) {
+                closest = archonLoc;
+                dist = d;
+            }
+        }
+        val = array[ARCHON_DATA_START + 3];
+        if (((val > 4096))) {
+            archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
+            d = current.distanceSquaredTo(archonLoc);
+            if (d < dist) {
+                closest = archonLoc;
+                dist = d;
+            }
+        }
+        return closest;
     }
 }

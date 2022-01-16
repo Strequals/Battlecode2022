@@ -138,8 +138,6 @@ public strictfp class MinerRobot extends Robot {
         MapLocation mineLocation;
         int turnsCanMine = -StrictMath.floorDiv(rc.getActionCooldownTurns() - 10, (int) ((1.0 + rc.senseRubble(me) / 10.0) * 2.0));
 
-        System.out.println("turnsCanMine: " + turnsCanMine + "\nCooldown turns: " + rc.getActionCooldownTurns() + "\nRubble:" + rc.senseRubble(me));
-
         int maxMines = StrictMath.min(turnsCanMine, rc.senseLead(me) - 1);
         switch (maxMines) {
             case 5:

@@ -16,6 +16,7 @@ public strictfp class SoldierRobot extends Robot {
     }
     
     public static final int ATTACK_DANGEROUS_RUBBLE = 25;
+    public static final int HEAL_HEALTH = 10;
 
     @Override
     public void run() throws GameActionException {
@@ -79,6 +80,7 @@ public strictfp class SoldierRobot extends Robot {
     RobotInfo[] nearbyRobots;
     boolean areEnemiesNearby;
     boolean areDangerousEnemies;
+    MapLocation friendlyArchonPos;
     boolean friendlyArchonNearby;
     MapLocation nearestAlly;
     MapLocation nearestEnemy;
@@ -93,6 +95,7 @@ public strictfp class SoldierRobot extends Robot {
         areEnemiesNearby = false;
         areDangerousEnemies = false;
         friendlyArchonNearby = false;
+        friendlyArchonPos = null;
         int fleeDistanceSquared = Integer.MAX_VALUE;
         nearestAlly = null;
         int nearestAllyDistance = Integer.MAX_VALUE;
@@ -108,6 +111,7 @@ public strictfp class SoldierRobot extends Robot {
                 switch (otherRobot.type) {
                     case ARCHON:
                         friendlyArchonNearby = true;
+                        friendlyArchonPos = otherRobot.location;
                         break;
                     case SOLDIER:
                     case WATCHTOWER:
@@ -437,6 +441,29 @@ public strictfp class SoldierRobot extends Robot {
 
         if (!rc.isMovementReady()) return null;
 
+        if (!areEnemiesNearby && rc.getHealth() < HEAL_HEALTH && !friendlyArchonNearby) {
+            MapLocation nearestArchon = Communications.getClosestArchon(rc);
+            if (nearestArchon != null) {
+                Direction d = Navigation.navigate(rc, rc.getLocation(), nearestArchon);
+                MapLocation to = current.add(d);
+                if (d != null && rc.canMove(d) &&
+                    (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE
+                     || rc.senseRubble(to) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE)) {
+                    return d;
+                }
+            }
+        }
+        boolean healing = friendlyArchonNearby && rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel());
+        /*if (healing) {
+            Direction lowest = getDirectionOfLeastRubbleWithinDistanceSquaredOf(friendlyArchonPos, RobotType.ARCHON.actionRadiusSquared);
+            if (lowest != null) {
+                MapLocation loc = rc.getLocation().add(lowest);
+                if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
+                    return lowest;
+                }
+            }
+        }*/
+
         if (fleeFrom != null
                 && (!isAllyInRange(fleeFrom, fleeAttackRadius) || maxDamageTaken >= rc.getHealth())
                 && !friendlyArchonNearby) {
@@ -444,7 +471,9 @@ public strictfp class SoldierRobot extends Robot {
             Direction fleeDir = Navigation.flee(rc, current, fleeFrom);
             MapLocation fleeLoc = current.add(fleeDir);
             if (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE || rc.senseRubble(fleeLoc) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE) {
-                return fleeDir;
+                if (!healing || fleeLoc.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
+                    return fleeDir;
+                }
             }
             return null;
         }
@@ -468,7 +497,9 @@ public strictfp class SoldierRobot extends Robot {
                 if (lowest != null) {
                     MapLocation loc = rc.getLocation().add(lowest);
                     if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
-                        return lowest;
+                        if (!healing || loc.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
+                            return lowest;
+                        }
                     }
                 }
             } else {
@@ -477,7 +508,9 @@ public strictfp class SoldierRobot extends Robot {
                 if (lowest != null) {
                     MapLocation loc = rc.getLocation().add(lowest);
                     if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
-                        return lowest;
+                        if (!healing || loc.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
+                            return lowest;
+                        }
                     }
                 }
             }
@@ -489,7 +522,21 @@ public strictfp class SoldierRobot extends Robot {
             if (d != null && rc.canMove(d) &&
                     (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE
                      || rc.senseRubble(to) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE)) {
-                return d;
+                if (!healing || to.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
+                    return d;
+                }
+            }
+        }
+
+        if (healing) {
+            Direction lowest = getDirectionOfLeastRubble();
+            if (lowest != null) {
+                MapLocation loc = rc.getLocation().add(lowest);
+                if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
+                    if (loc.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
+                        return lowest;
+                    }
+                }
             }
         }
         return null;
