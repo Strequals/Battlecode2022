@@ -18,6 +18,8 @@ public strictfp class Navigation {
         if (bfs == null) {
             switch (rc.getType()) {
                 case MINER:
+                    bfs = new BFSMiner();
+                    break;
                 case SOLDIER:
                     bfs = new BFSSoldier();
                     break;

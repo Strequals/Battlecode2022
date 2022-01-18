@@ -19,6 +19,7 @@ public strictfp class MinerRobot extends Robot {
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
+        updateExploration();
         
         boolean mined = tryMine();
         boolean moved = false;
@@ -34,11 +35,18 @@ public strictfp class MinerRobot extends Robot {
 
     RobotInfo[] nearbyRobots;
     int nearbyMiners;
+    final int MAX_ENEMY_LEVEL = 3;
+    boolean areEnemies;
+    int enemyLevel = 0;
+    MapLocation fleeFrom;
+    final int FLEE_MEMORY_TURNS = 4;
+    int fleeMemory = 0;
+    int MAX_FLEE_RUBBLE_INCREASE = 20;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
-        MapLocation fleeFrom = null;
         nearbyMiners = 0;
         int fleeDistanceSquared = Integer.MAX_VALUE;
+        areEnemies = false;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == rc.getTeam()) {
                 if (otherRobot.type == RobotType.MINER) {
@@ -57,15 +65,33 @@ public strictfp class MinerRobot extends Robot {
                     if (dsq < fleeDistanceSquared) {
                         fleeDistanceSquared = dsq;
                         fleeFrom = attackedFrom;
+                        fleeMemory = FLEE_MEMORY_TURNS;
                     }
                 }
+                areEnemies = true;
             }
         }
 
-        if (fleeFrom != null) {
-            tryFlee(fleeFrom);
-            resourceLocation = null;
-            //locationScore *= SCORE_DECAY;
+        if (areEnemies) {
+            enemyLevel = MAX_ENEMY_LEVEL;
+        } else if (enemyLevel > 0) {
+            enemyLevel--;
+        }
+
+        if (fleeMemory > 0) {
+            if (rc.isMovementReady()) {
+                Direction fleeDir = Navigation.flee(rc, rc.getLocation(), fleeFrom);
+                if (fleeDir != null) {
+                    MapLocation fleeLoc = rc.getLocation().add(fleeDir);
+                    if (rc.senseRubble(fleeLoc) - rc.senseRubble(rc.getLocation()) < MAX_FLEE_RUBBLE_INCREASE) {
+                        rc.move(fleeDir);
+                    }
+                }
+            }
+            fleeMemory--;
+            locationScore *= SCORE_DECAY;
+        } else {
+            fleeFrom = null;
         }
         
         processAndBroadcastEnemies(nearbyRobots);
@@ -138,7 +164,14 @@ public strictfp class MinerRobot extends Robot {
         MapLocation mineLocation;
         int turnsCanMine = -StrictMath.floorDiv(rc.getActionCooldownTurns() - 10, (int) ((1.0 + rc.senseRubble(me) / 10.0) * 2.0));
 
-        int maxMines = StrictMath.min(turnsCanMine, rc.senseLead(me) - 1);
+        int leaveLead;
+        if (enemyLevel > 0) {
+            leaveLead = 0;
+        } else {
+            leaveLead = 1;
+        }
+
+        int maxMines = StrictMath.min(turnsCanMine, rc.senseLead(me) - leaveLead);
         switch (maxMines) {
             case 5:
                 rc.mineLead(me);
@@ -152,11 +185,12 @@ public strictfp class MinerRobot extends Robot {
                 rc.mineLead(me);
                 mined = true;
                 turnsCanMine -= maxMines;
+
         }
         for (Direction d : directions) {
             mineLocation = me.add(d);
             if (rc.onTheMap(mineLocation)) {
-                maxMines = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation) - 1);
+                maxMines = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation) - leaveLead);
                 switch (maxMines) {
                     case 5:
                         rc.mineLead(mineLocation);
@@ -175,6 +209,33 @@ public strictfp class MinerRobot extends Robot {
         }
         return mined;
     }
+
+    public MapLocation mineFrom() throws GameActionException {
+        if (!rc.canSenseLocation(resourceLocation)) {
+            return resourceLocation;
+        }
+
+        MapLocation best = null;
+        int bestRubble = 101;
+        MapLocation current = rc.getLocation();
+        if (!rc.canSenseRobotAtLocation(resourceLocation) || resourceLocation.equals(current)) {
+            best = resourceLocation;
+            bestRubble = rc.senseRubble(resourceLocation);
+        }
+        MapLocation loc;
+        int rubble;
+        for (Direction d : directions) {
+            loc = resourceLocation.add(d);
+            if (loc.equals(current) || (rc.canSenseLocation(loc) && !rc.canSenseRobotAtLocation(loc))) {
+                rubble = rc.senseRubble(loc);
+                if (rubble < bestRubble) {
+                    bestRubble = rubble;
+                    best = loc;
+                }
+            }
+        }
+        return best;
+    }
     
     /**
      * Looks for a suitable location to mine and tries to move there.
@@ -182,19 +243,24 @@ public strictfp class MinerRobot extends Robot {
     public boolean tryMove() throws GameActionException {
         findResources();
         if (!rc.isMovementReady()) return false;
-        if (!rc.getLocation().equals(resourceLocation)) {
+        MapLocation mineFrom = mineFrom();
+        if (mineFrom != null) {
             Direction d = null;
-            if (rc.getLocation().distanceSquaredTo(resourceLocation) > 2) {
-                d = Navigation.navigate(rc, rc.getLocation(), resourceLocation);
-            } else {
-                d = rc.getLocation().directionTo(resourceLocation);
+            if (rc.getLocation().distanceSquaredTo(mineFrom) > 2) {
+                d = Navigation.navigate(rc, rc.getLocation(), mineFrom);
+            } else if (!rc.getLocation().equals(mineFrom)) {
+                d = rc.getLocation().directionTo(mineFrom);
             }
             if (d != null && rc.canMove(d)) {
                 rc.move(d);
                 return true;
             }
         } else {
-            // TODO: try moving to lower rubble here
+            Direction d = Navigation.navigate(rc, rc.getLocation(), resourceLocation);
+            if (d != null && rc.canMove(d)) {
+                rc.move(d);
+                return true;
+            }
         }
         return false;
     }
@@ -260,7 +326,7 @@ public strictfp class MinerRobot extends Robot {
             }
             
             if (resourceLocation == null) {
-                resourceLocation = getRandomLocation();
+                resourceLocation = getExploreLocation();
                 locationScore = 1;
             }
         }

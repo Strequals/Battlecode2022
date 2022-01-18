@@ -9,7 +9,6 @@ public strictfp class SoldierRobot extends Robot {
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_TARGET_THRESHOLD = 0.1;
     static final int GIVE_UP_RADIUS_SQUARED = 2;
-    static final boolean MOVE_IF_ATTACK_CD = false;
 
     public SoldierRobot(RobotController rc) {
         super(rc);
@@ -17,12 +16,13 @@ public strictfp class SoldierRobot extends Robot {
     
     public static final int ATTACK_DANGEROUS_RUBBLE = 25;
     public static final int HEAL_HEALTH = 10;
+    public static final int MINER_BOOST = 10;
 
     @Override
     public void run() throws GameActionException {
         
         processNearbyRobots();
-        broadcastNearbyResources();
+        broadcastNearbyResources(isMinerNearby || !areEnemiesNearby ? 0 : MINER_BOOST);
         
         /*Direction moved = tryMove();
         boolean attacked = tryAttack();
@@ -51,8 +51,11 @@ public strictfp class SoldierRobot extends Robot {
                         || (finalRubble <= currentRubble && (!isBeforeDangerous || isAfterDangerous))
                         || (finalRubble - currentRubble <= ATTACK_DANGEROUS_RUBBLE && isAfterDangerous && !isBeforeDangerous)) {
                     rc.move(moveDir);
-                    rc.attack(attackAfter);
-                    attacked = true;
+                    nearbyRobots = rc.senseNearbyRobots();
+                    if ((attackAfter = tryAttack()) != null) {
+                        rc.attack(attackAfter);
+                        attacked = true;
+                    }
                 } else {
                     rc.attack(attackBefore);
                     rc.move(moveDir);
@@ -89,6 +92,7 @@ public strictfp class SoldierRobot extends Robot {
     int maxDamageTaken;
     int allies;
     int turnsSinceSeenDangerousEnemy = 0;
+    boolean isMinerNearby;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         fleeFrom = null;
@@ -106,6 +110,7 @@ public strictfp class SoldierRobot extends Robot {
         maxDamageTaken = 0;
         int dmg;
         allies = 0;
+        isMinerNearby = false;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == team) {
                 switch (otherRobot.type) {
@@ -122,6 +127,9 @@ public strictfp class SoldierRobot extends Robot {
                             nearestAlly = otherRobot.location;
                         }
                         allies++;
+                        break;
+                    case MINER:
+                        isMinerNearby = true;
                         break;
                 }
             } else {
@@ -303,6 +311,12 @@ public strictfp class SoldierRobot extends Robot {
     }
 
 
+    public double score(int health, int rubble, int cool, int damage, int enemyDamage) {
+        int healthAfter = health - damage;
+        //return ((healthAfter > 0 ? (double) healthAfter : 0.000001)) * (int) ((1.0 + rubble / 10.0) * cool) / enemyDamage;
+        return ((healthAfter > 0 ? (double) healthAfter : 0.000001)) * cool / enemyDamage;
+    }
+
     /**
      * Targets the opposing enemy with the lowest health, prioritizing units that can attack;
      * returns null if no such enemy is found.
@@ -310,28 +324,31 @@ public strictfp class SoldierRobot extends Robot {
     public MapLocation identifyTarget() throws GameActionException {
         if (!areEnemiesNearby) return null;
         MapLocation best = null;
-        int health = Integer.MAX_VALUE;
+        double health = Double.MAX_VALUE;
         boolean canAttack = false;
         int id = Integer.MAX_VALUE;
+        int damage = rc.getType().getDamage(rc.getLevel());
+        double s;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team != rc.getTeam()
                     && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.SOLDIER.actionRadiusSquared)) {
-
                 if (otherRobot.type.canAttack()
                         && otherRobot.mode.canAct) {
-                    if (!canAttack || (otherRobot.health < health
-                            || (otherRobot.health == health
+                    s = score(otherRobot.health, rc.senseRubble(otherRobot.location), otherRobot.type.actionCooldown, damage, otherRobot.type.getDamage(otherRobot.level));
+                    if (!canAttack || (s < health
+                            || (s == health
                                 && otherRobot.ID < id))) {
-                        health = otherRobot.health;
+                        health = s;
                         canAttack = true;
                         best = otherRobot.location;
                         id = otherRobot.ID;
                     }
                 } else if (!canAttack) {
-                    if (otherRobot.health < health
-                            || (otherRobot.health == health
+                    s = otherRobot.health;
+                    if (s < health
+                            || (s == health
                                 && otherRobot.ID < id)) {
-                        health = otherRobot.health;
+                        health = s;
                         best = otherRobot.location;
                         id = otherRobot.ID;
                     }
@@ -347,28 +364,32 @@ public strictfp class SoldierRobot extends Robot {
     public MapLocation identifyTarget(MapLocation next) throws GameActionException {
         if (!areEnemiesNearby) return null;
         MapLocation best = null;
-        int health = Integer.MAX_VALUE;
+        double health = Double.MAX_VALUE;
         boolean canAttack = false;
         int id = Integer.MAX_VALUE;
+        int damage = rc.getType().getDamage(rc.getLevel());
+        double s;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team != rc.getTeam()
                     && next.isWithinDistanceSquared(otherRobot.location, RobotType.SOLDIER.actionRadiusSquared)) {
 
                 if (otherRobot.type.canAttack()
                         && otherRobot.mode.canAct) {
-                    if (!canAttack || (otherRobot.health < health
-                            || (otherRobot.health == health
+                    s = score(otherRobot.health, rc.senseRubble(otherRobot.location), otherRobot.type.actionCooldown, damage, otherRobot.type.getDamage(otherRobot.level));
+                    if (!canAttack || (s < health
+                            || (s == health
                                 && otherRobot.ID < id))) {
-                        health = otherRobot.health;
+                        health = s;
                         canAttack = true;
                         best = otherRobot.location;
                         id = otherRobot.ID;
                     }
                 } else if (!canAttack) {
-                    if (otherRobot.health < health
-                            || (otherRobot.health == health
+                    s = otherRobot.health;
+                    if (s < health
+                            || (s == health
                                 && otherRobot.ID < id)) {
-                        health = otherRobot.health;
+                        health = s;
                         best = otherRobot.location;
                         id = otherRobot.ID;
                     }
@@ -413,6 +434,7 @@ public strictfp class SoldierRobot extends Robot {
         }
         return best;
     }
+
 
     public boolean isAllyInRange(MapLocation l, int dsq) {
         Team team = rc.getTeam();
@@ -493,7 +515,25 @@ public strictfp class SoldierRobot extends Robot {
         if (nearestEnemy != null) {
             if (rc.isActionReady()) {
                 //Move to lower rubble and keep attacking
-                Direction lowest = getDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared);
+                
+                //Direction lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, d);
+                //Direction lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, Direction.NORTH);
+                
+                Direction lowest;
+                if (nearestAlly != null) {
+                    //stick to allies
+                    lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, current.directionTo(nearestAlly));
+                } else {
+                    //rotate around enemies to find allies
+                    Direction d = nearestEnemy.directionTo(current).rotateLeft();
+                    lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, d);
+                }
+
+                /*if (areDangerousEnemies) {
+                    lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, nearestEnemy.directionTo(current));
+                } else {
+                    lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, current.directionTo(targetLocation));
+                }*/
                 if (lowest != null) {
                     MapLocation loc = rc.getLocation().add(lowest);
                     if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
@@ -529,7 +569,7 @@ public strictfp class SoldierRobot extends Robot {
         }
 
         if (healing) {
-            Direction lowest = getDirectionOfLeastRubble();
+            Direction lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(friendlyArchonPos, RobotType.ARCHON.actionRadiusSquared, current.directionTo(friendlyArchonPos).rotateRight().rotateRight());
             if (lowest != null) {
                 MapLocation loc = rc.getLocation().add(lowest);
                 if (rc.senseRubble(loc) <= rc.senseRubble(current)) {

@@ -47,6 +47,99 @@ public strictfp abstract class Robot {
         return directions[rng.nextInt(8)];
     }
 
+    public void updateExploration() throws GameActionException {
+        if (exploration == null) {
+            exploration = new ExplorationMiner(rc);
+        }
+        exploration.explore(rc, rc.getLocation());
+    }
+    
+    static Exploration exploration;
+    public MapLocation getExploreLocation() {
+        if (exploration == null) {
+            exploration = new ExplorationMiner(rc);
+        }
+        int x = rng.nextInt(rc.getMapWidth());
+        int y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        if (!exploration.hasExplored(x, y)) {
+            return new MapLocation(x, y);
+        }
+        x = rng.nextInt(rc.getMapWidth());
+        y = rng.nextInt(rc.getMapHeight());
+        return new MapLocation(x, y);
+
+    }
+
     public Direction getDirectionOfLeastRubble() throws GameActionException {
         MapLocation current = rc.getLocation();
         MapLocation n = current.add(Direction.NORTH);
@@ -186,6 +279,94 @@ public strictfp abstract class Robot {
             r = rc.senseRubble(nw);
             if (r < leastRubble) {
                 best = Direction.NORTHWEST;
+                leastRubble = r;
+            }
+        }
+        return best;
+    }
+
+
+    public Direction getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(MapLocation center, int dsq, Direction bias) throws GameActionException {
+        MapLocation current = rc.getLocation();
+        MapLocation n = current.add(bias);
+        
+        int leastRubble = 101;
+        Direction best = null;
+        int r;
+        if (n.distanceSquaredTo(center) <= dsq && rc.onTheMap(n) && !rc.canSenseRobotAtLocation(n)) {
+            r = rc.senseRubble(n);
+            if (r < leastRubble) {
+                best = bias;
+                leastRubble = r;
+            }
+        }
+
+        Direction right = bias.rotateRight();
+        MapLocation ne = current.add(right);
+        if (ne.distanceSquaredTo(center) <= dsq && rc.onTheMap(ne) && !rc.canSenseRobotAtLocation(ne)) {
+            r = rc.senseRubble(ne);
+            if (r < leastRubble) {
+                best = right;
+                leastRubble = r;
+            }
+        }
+        
+        Direction left = bias.rotateLeft();
+        MapLocation e = current.add(left);
+        if (e.distanceSquaredTo(center) <= dsq && rc.onTheMap(e) && !rc.canSenseRobotAtLocation(e)) {
+            r = rc.senseRubble(e);
+            if (r < leastRubble) {
+                best = left;
+                leastRubble = r;
+            }
+        }
+
+        right = right.rotateRight();
+        MapLocation se = current.add(right);
+        if (se.distanceSquaredTo(center) <= dsq && rc.onTheMap(se) && !rc.canSenseRobotAtLocation(se)) {
+            r = rc.senseRubble(se);
+            if (r < leastRubble) {
+                best = right;
+                leastRubble = r;
+            }
+        }
+
+        left = left.rotateLeft();
+        MapLocation s = current.add(left);
+        if (s.distanceSquaredTo(center) <= dsq && rc.onTheMap(s) && !rc.canSenseRobotAtLocation(s)) {
+            r = rc.senseRubble(s);
+            if (r < leastRubble) {
+                best = left;
+                leastRubble = r;
+            }
+        }
+
+        right = right.rotateRight();
+        MapLocation sw = current.add(right);
+        if (sw.distanceSquaredTo(center) <= dsq && rc.onTheMap(sw) && !rc.canSenseRobotAtLocation(sw)) {
+            r = rc.senseRubble(sw);
+            if (r < leastRubble) {
+                best = right;
+                leastRubble = r;
+            }
+        }
+
+        left = left.rotateLeft();
+        MapLocation w = current.add(left);
+        if (w.distanceSquaredTo(center) <= dsq && rc.onTheMap(w) && !rc.canSenseRobotAtLocation(w)) {
+            r = rc.senseRubble(w);
+            if (r < leastRubble) {
+                best = left;
+                leastRubble = r;
+            }
+        }
+
+        right = right.rotateRight();
+        MapLocation nw = current.add(right);
+        if (nw.distanceSquaredTo(center) <= dsq && rc.onTheMap(nw) && !rc.canSenseRobotAtLocation(nw)) {
+            r = rc.senseRubble(nw);
+            if (r < leastRubble) {
+                best = right;
                 leastRubble = r;
             }
         }
@@ -333,7 +514,17 @@ public strictfp abstract class Robot {
         }
     }
 
+    public void broadcastNearbyResources(int boost) throws GameActionException {
+        Resource r = senseAllNearbyResources();
+        if (r != null) {
+            Communications.addResourceData(rc, r.location, r.value + boost);
+        } else {
+            Communications.addResourceData(rc, rc.getLocation(), boost);
+        }
+    }
+
     public boolean validBuildLocation(MapLocation l) throws GameActionException {
         return (l.x % 2 == 0) && (l.y % 2 == 0);
     }
-}
+
+    }

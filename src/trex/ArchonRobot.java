@@ -14,7 +14,7 @@ public strictfp class ArchonRobot extends Robot {
     
     private int explorationMiners;
     private static final int BASE_MIN_MINER = 2;
-    private static final double MINER_RATIO = 0.004;
+    private static final double MINER_RATIO = 0.002;
 
     private static final double WEIGHT_DECAY = 0.5;
 
@@ -108,7 +108,7 @@ public strictfp class ArchonRobot extends Robot {
     private static final double RESOURCE_WEIGHT = 0.0001;
     private static final double BASE_MINER_WEIGHT = 0.4;
     private static final double MAX_RESOURCE_BONUS = 0.8;
-    private static final double NOT_ENOUGH_MINERS_BONUS = 0.2;
+    private static final double NOT_ENOUGH_MINERS_BONUS = 0.6;
     private static final double MAKE_SOLDIERS_THRESHOLD = 2;
 
     public void updateWeights() throws GameActionException {
@@ -205,6 +205,10 @@ public strictfp class ArchonRobot extends Robot {
             type = RobotType.BUILDER;
         }
 
+        if (rc.getTeamGoldAmount(rc.getTeam()) >= 20) {
+            type = RobotType.SAGE;
+        }
+
         Direction d = null;
         switch (type) {
             case MINER:
@@ -218,6 +222,7 @@ public strictfp class ArchonRobot extends Robot {
                     d = getDirectionOfLeastRubble();
                 }
                 break;
+            case SAGE:
             case SOLDIER:
                 if (nearestEnemy != null) {
                     d = Navigation.navigate(rc, rc.getLocation(), nearestEnemy);
@@ -242,6 +247,7 @@ public strictfp class ArchonRobot extends Robot {
                 } else {
                     d = getDirectionOfLeastRubble();
                 }
+                break;
         }
 
         if (tryBuild(type, d)) {

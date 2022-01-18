@@ -20,7 +20,7 @@ public strictfp class Resource {
         value = heuristic(pb, au);
     }
 
-    public static final int GOLD_WEIGHT = 32;
+    public static final int GOLD_WEIGHT = 64;
     public static int heuristic(int pb, int au) {
         return GOLD_WEIGHT * au + pb;
     }
