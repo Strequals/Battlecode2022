@@ -173,6 +173,7 @@ public strictfp class SageRobot extends Robot {
         }
 
         processAndBroadcastEnemies(nearbyRobots);
+        broadcastAllies(rc.getLocation(), allies);
     }
 
     public MapLocation tryAttack() throws GameActionException {

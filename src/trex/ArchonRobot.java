@@ -18,6 +18,8 @@ public strictfp class ArchonRobot extends Robot {
 
     private static final double WEIGHT_DECAY = 0.5;
 
+    MapLocation allyLocation;
+
     public ArchonRobot(RobotController rc) throws GameActionException {
         super(rc);
         minerWeight = 16;
@@ -26,6 +28,7 @@ public strictfp class ArchonRobot extends Robot {
         Communications.calculateArchonNumber(rc);
         explorationMiners = (int) (MINER_RATIO * rc.getMapWidth() * rc.getMapHeight()) + BASE_MIN_MINER;
         exploring = true;
+        portableTurns = 0;
     }
 
     @Override
@@ -34,9 +37,29 @@ public strictfp class ArchonRobot extends Robot {
         broadcastNearbyResources();
         updateWeights();
         tryActivate();
-        tryBuild();
-        tryRepair();
-        Communications.writeArchonPriority(rc);
+        switch (rc.getMode()) {
+            case TURRET:
+                tryBuild();
+                tryRepair();
+                Communications.writeArchonPriority(rc);
+                if (shouldBecomePortable() && rc.canTransform()) {
+                    findAllyLocation();
+                    if (allyLocation != null) {
+                        rc.transform();
+                        portableTurns = 0;
+                    }
+                }
+                break;
+            case PORTABLE:
+                if (shouldBecomeTurret() && rc.canTransform()) {
+                    rc.transform();
+                    Communications.zeroArchonPriority(rc);
+                } else {
+                    tryMove();
+                    portableTurns++;
+                }
+                break;
+        }
         Communications.writeArchonData(rc);
         //rc.setIndicatorString(Communications.archonNum + ", prty:" + Communications.archonPriority);
         /*rc.setIndicatorString(Communications.readArchonPriority(rc, 0) + " " 
@@ -47,6 +70,18 @@ public strictfp class ArchonRobot extends Robot {
                 + rc.getTeamLeadAmount(rc.getTeam()));*/
 
         rc.setIndicatorString("miners:" + Communications.getPrevMinerCount(rc));
+    }
+
+    public boolean shouldBecomePortable() throws GameActionException {
+        return !isRepairableRobot();
+    }
+
+    public static final int BECOME_TURRET_LEAD = 75;
+    public static final int MAX_PORTABLE_TURNS = 20;
+    int portableTurns;
+
+    public boolean shouldBecomeTurret() throws GameActionException {
+        return isRepairableRobot() || rc.getTeamLeadAmount(rc.getTeam()) >= BECOME_TURRET_LEAD || portableTurns > MAX_PORTABLE_TURNS;
     }
 
     public void tryActivate() throws GameActionException {
@@ -329,7 +364,20 @@ public strictfp class ArchonRobot extends Robot {
         
     }
 
-public MapLocation identifyRepairableRobot() throws GameActionException {
+    public boolean isRepairableRobot() throws GameActionException {
+        MapLocation current = rc.getLocation();
+        Team team = rc.getTeam();
+        for (RobotInfo otherRobot : nearbyRobots) {
+            if (otherRobot.team == team
+                && current.isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)
+                && otherRobot.health < otherRobot.type.getMaxHealth(otherRobot.level)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public MapLocation identifyRepairableRobot() throws GameActionException {
         MapLocation best = null;
         int health = Integer.MAX_VALUE;
         boolean canAttack = false;
@@ -354,6 +402,24 @@ public MapLocation identifyRepairableRobot() throws GameActionException {
             }
         }
         return best;
+    }
+    
+    public static final int ALLY_THRESHOLD = 1;
+    public void findAllyLocation() throws GameActionException {
+        Resource allies = Communications.readAlliesData(rc);
+        if (allies.value >= ALLY_THRESHOLD) {
+            allyLocation = allies.location;
+        }
+    }
+
+    public boolean tryMove() throws GameActionException {
+        findAllyLocation();
+        Direction d = Navigation.navigate(rc, rc.getLocation(), allyLocation);
+        if (d != null && rc.canMove(d)) {
+            rc.move(d);
+            return true;
+        }
+        return false;
     }
 
 

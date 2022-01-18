@@ -5,6 +5,8 @@ public strictfp class Communications {
     private static final int RESOURCE_NUM = 8;
     private static final int ENEMIES_START = 8;
     private static final int ENEMIES_NUM = 8;
+    private static final int ALLIES_START = 16;
+    private static final int ALLIES_NUM = 8;
     private static final int ARCHON_DATA_START = 55;
     private static final int PREV_INCOME_INDEX = 59;
     private static final int INCOME_INDEX = 60;
@@ -163,6 +165,9 @@ public strictfp class Communications {
     public static void addEnemyData(RobotController rc, MapLocation location, int value) throws GameActionException {
         addData(rc, location, value, ENEMIES_START, ENEMIES_NUM);
     }
+    public static void addAlliesData(RobotController rc, MapLocation location, int value) throws GameActionException {
+        addData(rc, location, value, ALLIES_START, ALLIES_NUM);
+    }
     private static double resourceHeuristic(double v_adjusted, int distanceSquared) {
         return v_adjusted * Math.pow(DECAY_FACTOR, Math.sqrt(distanceSquared));
     }
@@ -188,6 +193,9 @@ public strictfp class Communications {
     }
     public static Resource readEnemiesData(RobotController rc) throws GameActionException {
         return readData(rc, ENEMIES_START, ENEMIES_NUM);
+    }
+    public static Resource readAlliesData(RobotController rc) throws GameActionException {
+        return readData(rc, ALLIES_START, ALLIES_NUM);
     }
     private static void markEnemies(RobotController rc) throws GameActionException {
         for (int i = ENEMIES_START + ENEMIES_NUM; i-- > ENEMIES_START;) {

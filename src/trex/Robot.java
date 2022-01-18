@@ -464,6 +464,10 @@ public strictfp abstract class Robot {
         }
     }
 
+    public void broadcastAllies(MapLocation loc, int allies) throws GameActionException {
+        Communications.addAlliesData(rc, loc, allies);
+    }
+
     public Resource senseAllNearbyResources() throws GameActionException {
         int lead;
         int gold;

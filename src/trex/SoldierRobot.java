@@ -172,6 +172,7 @@ public strictfp class SoldierRobot extends Robot {
         }
 
         processAndBroadcastEnemies(nearbyRobots);
+        broadcastAllies(rc.getLocation(), allies);
     }
 
     public MapLocation tryAttack() throws GameActionException {
