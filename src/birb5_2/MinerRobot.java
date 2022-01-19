@@ -1,4 +1,4 @@
-package trex;
+package birb5_2;
 
 import battlecode.common.*;
 
@@ -283,7 +283,6 @@ public strictfp class MinerRobot extends Robot {
      * Looks for a suitable place to mine; if no such place is found, chooses a
      * location at random.
      **/
-
     public void findResources() throws GameActionException {
         Resource r = senseAllNearbyResources();
         if (r != null) {

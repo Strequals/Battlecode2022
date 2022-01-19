@@ -1,4 +1,4 @@
-package trex;
+package birb5_2;
 
 import battlecode.common.*;
 
@@ -11,15 +11,12 @@ public strictfp class ArchonRobot extends Robot {
     private int previousLead = 200;
     private boolean activeArchon = false;
     private boolean exploring;
-    private int turnsIdled;
     
     private int explorationMiners;
     private static final int BASE_MIN_MINER = 2;
     private static final double MINER_RATIO = 0.002;
 
     private static final double WEIGHT_DECAY = 0.5;
-
-    MapLocation allyLocation;
 
     public ArchonRobot(RobotController rc) throws GameActionException {
         super(rc);
@@ -29,8 +26,6 @@ public strictfp class ArchonRobot extends Robot {
         Communications.calculateArchonNumber(rc);
         explorationMiners = (int) (MINER_RATIO * rc.getMapWidth() * rc.getMapHeight()) + BASE_MIN_MINER;
         exploring = true;
-        portableTurns = 0;
-        turnsIdled = 0;
     }
 
     @Override
@@ -39,40 +34,8 @@ public strictfp class ArchonRobot extends Robot {
         broadcastNearbyResources();
         updateWeights();
         tryActivate();
-        switch (rc.getMode()) {
-            case TURRET:
-                boolean built = tryBuild();
-                boolean repaired = tryRepair();
-                
-                if (shouldBecomePortable() && rc.canTransform()) {
-                    findAllyLocation();
-                    if (allyLocation != null) {
-                        rc.transform();
-                        portableTurns = 0;
-                    }
-                }
-
-                if (!built && !repaired) {
-                    turnsIdled++;
-                }
-                break;
-            case PORTABLE:
-                findAllyLocation();
-                if ((allyLocation == null || shouldBecomeTurret()) && !tryMoveToLowerRubble() && rc.canTransform()) {
-                    rc.transform();
-                    Communications.zeroArchonPriority(rc);
-                } else {
-                    tryMove();
-                    if (allyLocation == null) {
-                        if (rc.canTransform()) {
-                            rc.transform();
-                            turnsIdled = 0;
-                        }
-                    }
-                    portableTurns++;
-                }
-                break;
-        }
+        tryBuild();
+        tryRepair();
         Communications.writeArchonPriority(rc);
         Communications.writeArchonData(rc);
         //rc.setIndicatorString(Communications.archonNum + ", prty:" + Communications.archonPriority);
@@ -84,21 +47,6 @@ public strictfp class ArchonRobot extends Robot {
                 + rc.getTeamLeadAmount(rc.getTeam()));*/
 
         rc.setIndicatorString("miners:" + Communications.getPrevMinerCount(rc));
-    }
-
-    public final int TURNS_IDLE = 20;
-    public static final int LOW_LEAD = 25;
-    public boolean shouldBecomePortable() throws GameActionException {
-        return turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1);
-    }
-
-    public static final int BECOME_TURRET_LEAD = 150;
-    public static final int MAX_PORTABLE_TURNS = 50;
-    public static final int HIGH_LEAD = 75;
-    int portableTurns;
-
-    public boolean shouldBecomeTurret() throws GameActionException {
-        return isRepairableRobot() || rc.getTeamLeadAmount(rc.getTeam()) >= HIGH_LEAD * (1 + Communications.countHigherPriorityArchons(rc)) || (portableTurns > MAX_PORTABLE_TURNS && !enemiesNearby);
     }
 
     public void tryActivate() throws GameActionException {
@@ -381,91 +329,31 @@ public strictfp class ArchonRobot extends Robot {
         
     }
 
-    public boolean isRepairableRobot() throws GameActionException {
-        MapLocation current = rc.getLocation();
-        Team team = rc.getTeam();
-        for (RobotInfo otherRobot : nearbyRobots) {
-            switch (otherRobot.type) {
-                case SOLDIER:
-                case SAGE:
-                    if (otherRobot.team == team
-                        && current.isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)
-                        && otherRobot.health < otherRobot.type.getMaxHealth(otherRobot.level)) {
-                        return true;
-                    }
-            }
-        }
-        return false;
-    }
-
-    public MapLocation identifyRepairableRobot() throws GameActionException {
+public MapLocation identifyRepairableRobot() throws GameActionException {
         MapLocation best = null;
         int health = Integer.MAX_VALUE;
         boolean canAttack = false;
         Team team = rc.getTeam();
         for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.mode == RobotMode.DROID) {
-                if (otherRobot.team == team
-                        && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)
-                        && otherRobot.health < otherRobot.type.getMaxHealth(otherRobot.level)) {
-                    if (otherRobot.type.canAttack()
-                            && otherRobot.mode.canAct) {
-                        if (otherRobot.health < health) {
-                            health = otherRobot.health;
-                            canAttack = true;
-                            best = otherRobot.location;
-                        }
-                    } else if (!canAttack) {
-                        if (otherRobot.health < health) {
-                            health = otherRobot.health;
-                            best = otherRobot.location;
-                        }
+            if (otherRobot.team == team
+                    && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)
+                    && otherRobot.health < otherRobot.type.getMaxHealth(otherRobot.level)) {
+                if (otherRobot.type.canAttack()
+                        && otherRobot.mode.canAct) {
+                    if (otherRobot.health < health) {
+                        health = otherRobot.health;
+                        canAttack = true;
+                        best = otherRobot.location;
+                    }
+                } else if (!canAttack) {
+                    if (otherRobot.health < health) {
+                        health = otherRobot.health;
+                        best = otherRobot.location;
                     }
                 }
             }
         }
         return best;
-    }
-    
-    public static final int ALLY_THRESHOLD = 1;
-    public static final int MOVE_DISTANCE_THRESHOLD = 20;
-    public void findAllyLocation() throws GameActionException {
-        Resource allies = Communications.readAlliesData(rc);
-        if (allies.value >= ALLY_THRESHOLD) {
-            if (allies.location.distanceSquaredTo(rc.getLocation()) > MOVE_DISTANCE_THRESHOLD) {
-                allyLocation = allies.location;
-                return;
-            }
-        }
-        allyLocation = null;
-    }
-
-    public boolean tryMove() throws GameActionException {
-        Direction d = Navigation.navigate(rc, rc.getLocation(), allyLocation);
-        if (d != null && rc.canMove(d)) {
-            rc.move(d);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean tryMoveToLowerRubble() throws GameActionException {
-        Direction d;
-        if (allyLocation != null) {
-            d = getBiasedDirectionOfLeastRubble(rc.getLocation().directionTo(allyLocation));
-        } else {
-            d = getDirectionOfLeastRubble();
-        }
-        if (d != null) {
-            MapLocation to = rc.getLocation().add(d);
-            if (rc.senseRubble(to) < rc.senseRubble(rc.getLocation())) {
-                if (rc.canMove(d)) {
-                    rc.move(d);
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
 

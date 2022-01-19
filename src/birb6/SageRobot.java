@@ -1,4 +1,4 @@
-package trex;
+package birb6;
 
 import battlecode.common.*;
 

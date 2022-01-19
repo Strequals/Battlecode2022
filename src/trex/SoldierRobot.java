@@ -172,7 +172,9 @@ public strictfp class SoldierRobot extends Robot {
         }
 
         processAndBroadcastEnemies(nearbyRobots);
-        broadcastAllies(rc.getLocation(), allies);
+        if (areDangerousEnemies) {
+            broadcastAllies(rc.getLocation(), allies);
+        }
     }
 
     public MapLocation tryAttack() throws GameActionException {
@@ -521,13 +523,21 @@ public strictfp class SoldierRobot extends Robot {
                 //Direction lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, Direction.NORTH);
                 
                 Direction lowest;
+                boolean takeOverEqual = false;
                 if (nearestAlly != null) {
                     //stick to allies
-                    lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, current.directionTo(nearestAlly));
+                    Direction bias = current.directionTo(nearestAlly);
+                    lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, bias);
+                    if (diff(lowest, bias) <= 1) {
+                        takeOverEqual = true;
+                    }
                 } else {
                     //rotate around enemies to find allies
                     Direction d = nearestEnemy.directionTo(current).rotateLeft();
                     lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, d);
+                    if (diff(lowest, d) <= 1) {
+                        takeOverEqual = true;
+                    }
                 }
 
                 /*if (areDangerousEnemies) {
@@ -537,7 +547,10 @@ public strictfp class SoldierRobot extends Robot {
                 }*/
                 if (lowest != null) {
                     MapLocation loc = rc.getLocation().add(lowest);
-                    if (rc.senseRubble(loc) <= rc.senseRubble(current)) {
+                    int locRubble = rc.senseRubble(loc);
+                    int currentRubble = rc.senseRubble(current);
+                    if (locRubble < currentRubble
+                            || (takeOverEqual && locRubble == currentRubble)) {
                         if (!healing || loc.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
                             return lowest;
                         }

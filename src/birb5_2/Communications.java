@@ -1,21 +1,17 @@
-package trex;
+package birb5_2;
 import battlecode.common.*;
 public strictfp class Communications {
     private static final int RESOURCE_START = 0;
     private static final int RESOURCE_NUM = 8;
     private static final int ENEMIES_START = 8;
     private static final int ENEMIES_NUM = 8;
-    private static final int ALLIES_START = 16;
-    private static final int ALLIES_NUM = 8;
     private static final int ARCHON_DATA_START = 55;
     private static final int PREV_INCOME_INDEX = 59;
     private static final int INCOME_INDEX = 60;
     private static final int MINER_COUNT_PREV = 61;
     private static final int MINER_COUNT_INDEX = 62;
     private static final int ARCHON_PRIORITY_INDEX = 63;
-    private static final double RESOURCE_DECAY_FACTOR = 0.9;
-    private static final double ENEMIES_DECAY_FACTOR = 0.5;
-    private static final double ALLIES_DECAY_FACTOR = 0.1;
+    private static final double DECAY_FACTOR = 0.8;
     private static final int UPDATE_RADIUS_SQUARED = 5;
     private static int[] array = new int[64];
     private static int lastUpdated = -1;
@@ -105,7 +101,7 @@ public strictfp class Communications {
     private static void writeData(RobotController rc, int index, MapLocation location, int value, int roundNum) throws GameActionException {
         writeData(rc, index, location.x, location.y, value, roundNum);
     }
-    private static void addData(RobotController rc, MapLocation location, int value, int start, int num, double decay) throws GameActionException {
+    private static void addData(RobotController rc, MapLocation location, int value, int start, int num) throws GameActionException {
         updateArray(rc);
         if (value > 0) {
             int lowestIndex = 0;
@@ -118,7 +114,7 @@ public strictfp class Communications {
             int d;
             int roundNum = rc.getRoundNum();
             for (int i = start + num - 1; i-- > start;) {
-                v = ((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(decay, roundNum - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2))))));
+                v = ((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(DECAY_FACTOR, roundNum - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2))))));
                 if (v < lowestValue) {
                     lowestValue = v;
                     lowestIndex = i;
@@ -162,49 +158,43 @@ public strictfp class Communications {
         }
     }
     public static void addResourceData(RobotController rc, MapLocation location, int value) throws GameActionException {
-        addData(rc, location, value, RESOURCE_START, RESOURCE_NUM, RESOURCE_DECAY_FACTOR);
+        addData(rc, location, value, RESOURCE_START, RESOURCE_NUM);
     }
     public static void addEnemyData(RobotController rc, MapLocation location, int value) throws GameActionException {
-        addData(rc, location, value, ENEMIES_START, ENEMIES_NUM, ENEMIES_DECAY_FACTOR);
+        addData(rc, location, value, ENEMIES_START, ENEMIES_NUM);
     }
-    public static void addAlliesData(RobotController rc, MapLocation location, int value) throws GameActionException {
-        addData(rc, location, value, ALLIES_START, ALLIES_NUM, ALLIES_DECAY_FACTOR);
+    private static double resourceHeuristic(double v_adjusted, int distanceSquared) {
+        return v_adjusted * Math.pow(DECAY_FACTOR, Math.sqrt(distanceSquared));
     }
-    private static double resourceHeuristic(double v_adjusted, int distanceSquared, double decay) {
-        return v_adjusted * Math.pow(decay, Math.sqrt(distanceSquared));
-    }
-    private static Resource readData(RobotController rc, int start, int num, double decay) throws GameActionException {
+    private static Resource readData(RobotController rc, int start, int num) throws GameActionException {
         updateArray(rc);
         MapLocation current = rc.getLocation();
         int highestIndex = 0;
-        double highestValue = 0;
+        double highestValue = -Double.MAX_VALUE;
         double v;
         int roundNum = rc.getRoundNum();
         for (int i = start + num - 1; i-- > start;) {
-            v = resourceHeuristic(((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(decay, roundNum - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2)))))),
-                    (int) (Math.pow(current.x-((array[2 * i] % 64)), 2) + Math.pow(current.y-(((array[2 * i + 1] % 128) / 2)), 2)), decay);
+            v = resourceHeuristic(((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(DECAY_FACTOR, roundNum - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2)))))),
+                    (int) (Math.pow(current.x-((array[2 * i] % 64)), 2) + Math.pow(current.y-(((array[2 * i + 1] % 128) / 2)), 2)));
             if (v > highestValue) {
                 highestValue = v;
                 highestIndex = i;
             }
         }
-        return new Resource(location(highestIndex), (int) ((((double) ((array[2 * highestIndex + 1] / 128))) * StrictMath.pow(decay, roundNum - ((2 * (array[2 * highestIndex] / 64) + (array[2 * highestIndex + 1] % 2)))))));
+        return new Resource(location(highestIndex), (int) ((((double) ((array[2 * highestIndex + 1] / 128))) * StrictMath.pow(DECAY_FACTOR, roundNum - ((2 * (array[2 * highestIndex] / 64) + (array[2 * highestIndex + 1] % 2)))))));
     }
     public static Resource readResourceData(RobotController rc) throws GameActionException {
-        return readData(rc, RESOURCE_START, RESOURCE_NUM, RESOURCE_DECAY_FACTOR);
+        return readData(rc, RESOURCE_START, RESOURCE_NUM);
     }
     public static Resource readEnemiesData(RobotController rc) throws GameActionException {
-        return readData(rc, ENEMIES_START, ENEMIES_NUM, ENEMIES_DECAY_FACTOR);
+        return readData(rc, ENEMIES_START, ENEMIES_NUM);
     }
-    public static Resource readAlliesData(RobotController rc) throws GameActionException {
-        return readData(rc, ALLIES_START, ALLIES_NUM, ALLIES_DECAY_FACTOR);
-    }
-    private static void markEnemies(RobotController rc, double decay) throws GameActionException {
+    private static void markEnemies(RobotController rc) throws GameActionException {
         for (int i = ENEMIES_START + ENEMIES_NUM; i-- > ENEMIES_START;) {
-            rc.setIndicatorDot(location(i), 0, 0, 10 * (int) ((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(decay, rc.getRoundNum() - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2)))))));
+            rc.setIndicatorDot(location(i), 0, 0, 10 * (int) ((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(DECAY_FACTOR, rc.getRoundNum() - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2)))))));
         }
     }
-    private static double readTotal(RobotController rc, int start, int num, double decay) throws GameActionException {
+    private static double readTotal(RobotController rc, int start, int num) throws GameActionException {
         updateArray(rc);
         double total = 0;
         int i;
@@ -212,16 +202,16 @@ public strictfp class Communications {
         int roundNum = rc.getRoundNum();
         for (int j = num; j-- > 0;) {
             i = j + start;
-            v = ((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(decay, roundNum - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2))))));
+            v = ((((double) ((array[2 * i + 1] / 128))) * StrictMath.pow(DECAY_FACTOR, roundNum - ((2 * (array[2 * i] / 64) + (array[2 * i + 1] % 2))))));
             total += v;
         }
         return total;
     }
     public static double readTotalResources(RobotController rc) throws GameActionException {
-        return readTotal(rc, RESOURCE_START, RESOURCE_NUM, RESOURCE_DECAY_FACTOR);
+        return readTotal(rc, RESOURCE_START, RESOURCE_NUM);
     }
     public static double readTotalEnemies(RobotController rc) throws GameActionException {
-        return readTotal(rc, ENEMIES_START, ENEMIES_NUM, ENEMIES_DECAY_FACTOR);
+        return readTotal(rc, ENEMIES_START, ENEMIES_NUM);
     }
     public static int getIncome(RobotController rc) {
         return array[PREV_INCOME_INDEX];

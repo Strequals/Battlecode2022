@@ -1,4 +1,4 @@
-package trex;
+package birb5_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -26,171 +26,6 @@ public strictfp abstract class Robot {
 
     public abstract void run() throws GameActionException;
 
-    public int diff(Direction d1, Direction d2) {
-        switch (d1) {
-            case NORTH:
-                switch (d2) {
-                    case NORTH:
-                        return 0;
-                    case NORTHEAST:
-                        return 1;
-                    case EAST:
-                        return 2;
-                    case SOUTHEAST:
-                        return 3;
-                    case SOUTH:
-                        return 4;
-                    case SOUTHWEST:
-                        return 3;
-                    case WEST:
-                        return 2;
-                    case NORTHWEST:
-                        return 1;
-                }
-                break;
-            case NORTHEAST:
-                switch (d2) {
-                    case NORTH:
-                        return 1;
-                    case NORTHEAST:
-                        return 0;
-                    case EAST:
-                        return 1;
-                    case SOUTHEAST:
-                        return 2;
-                    case SOUTH:
-                        return 3;
-                    case SOUTHWEST:
-                        return 4;
-                    case WEST:
-                        return 3;
-                    case NORTHWEST:
-                        return 2;
-                }
-                break;
-            case EAST:
-                switch (d2) {
-                    case NORTH:
-                        return 2;
-                    case NORTHEAST:
-                        return 1;
-                    case EAST:
-                        return 0;
-                    case SOUTHEAST:
-                        return 1;
-                    case SOUTH:
-                        return 2;
-                    case SOUTHWEST:
-                        return 3;
-                    case WEST:
-                        return 4;
-                    case NORTHWEST:
-                        return 3;
-                }
-                break;
-            case SOUTHEAST:
-                switch (d2) {
-                    case NORTH:
-                        return 3;
-                    case NORTHEAST:
-                        return 2;
-                    case EAST:
-                        return 1;
-                    case SOUTHEAST:
-                        return 0;
-                    case SOUTH:
-                        return 1;
-                    case SOUTHWEST:
-                        return 2;
-                    case WEST:
-                        return 3;
-                    case NORTHWEST:
-                        return 4;
-                }
-                break;
-            case SOUTH:
-                switch (d2) {
-                    case NORTH:
-                        return 4;
-                    case NORTHEAST:
-                        return 3;
-                    case EAST:
-                        return 2;
-                    case SOUTHEAST:
-                        return 1;
-                    case SOUTH:
-                        return 0;
-                    case SOUTHWEST:
-                        return 1;
-                    case WEST:
-                        return 2;
-                    case NORTHWEST:
-                        return 3;
-                }
-                break;
-            case SOUTHWEST:
-                switch (d2) {
-                    case NORTH:
-                        return 3;
-                    case NORTHEAST:
-                        return 4;
-                    case EAST:
-                        return 3;
-                    case SOUTHEAST:
-                        return 2;
-                    case SOUTH:
-                        return 1;
-                    case SOUTHWEST:
-                        return 0;
-                    case WEST:
-                        return 1;
-                    case NORTHWEST:
-                        return 2;
-                }
-                break;
-            case WEST:
-                switch (d2) {
-                    case NORTH:
-                        return 2;
-                    case NORTHEAST:
-                        return 3;
-                    case EAST:
-                        return 4;
-                    case SOUTHEAST:
-                        return 3;
-                    case SOUTH:
-                        return 2;
-                    case SOUTHWEST:
-                        return 1;
-                    case WEST:
-                        return 0;
-                    case NORTHWEST:
-                        return 1;
-                }
-                break;
-            case NORTHWEST:
-                switch (d2) {
-                    case NORTH:
-                        return 1;
-                    case NORTHEAST:
-                        return 2;
-                    case EAST:
-                        return 3;
-                    case SOUTHEAST:
-                        return 4;
-                    case SOUTH:
-                        return 3;
-                    case SOUTHWEST:
-                        return 2;
-                    case WEST:
-                        return 1;
-                    case NORTHWEST:
-                        return 0;
-                }
-                break;
-        }
-        return 8;
-    }
     public MapLocation getRandomLocation() {
         return new MapLocation(
                 rng.nextInt(rc.getMapWidth()),
@@ -377,6 +212,7 @@ public strictfp abstract class Robot {
         return best;
     }
 
+
     public Direction getDirectionOfLeastRubbleWithinDistanceSquaredOf(MapLocation center, int dsq) throws GameActionException {
         MapLocation current = rc.getLocation();
         MapLocation n = current.add(Direction.NORTH);
@@ -449,92 +285,6 @@ public strictfp abstract class Robot {
         return best;
     }
 
-    public Direction getBiasedDirectionOfLeastRubble(Direction bias) throws GameActionException {
-        MapLocation current = rc.getLocation();
-        MapLocation n = current.add(bias);
-        
-        int leastRubble = 101;
-        Direction best = null;
-        int r;
-        if (rc.onTheMap(n) && !rc.canSenseRobotAtLocation(n)) {
-            r = rc.senseRubble(n);
-            if (r < leastRubble) {
-                best = bias;
-                leastRubble = r;
-            }
-        }
-
-        Direction right = bias.rotateRight();
-        MapLocation ne = current.add(right);
-        if (rc.onTheMap(ne) && !rc.canSenseRobotAtLocation(ne)) {
-            r = rc.senseRubble(ne);
-            if (r < leastRubble) {
-                best = right;
-                leastRubble = r;
-            }
-        }
-        
-        Direction left = bias.rotateLeft();
-        MapLocation e = current.add(left);
-        if (rc.onTheMap(e) && !rc.canSenseRobotAtLocation(e)) {
-            r = rc.senseRubble(e);
-            if (r < leastRubble) {
-                best = left;
-                leastRubble = r;
-            }
-        }
-
-        right = right.rotateRight();
-        MapLocation se = current.add(right);
-        if (rc.onTheMap(se) && !rc.canSenseRobotAtLocation(se)) {
-            r = rc.senseRubble(se);
-            if (r < leastRubble) {
-                best = right;
-                leastRubble = r;
-            }
-        }
-
-        left = left.rotateLeft();
-        MapLocation s = current.add(left);
-        if (rc.onTheMap(s) && !rc.canSenseRobotAtLocation(s)) {
-            r = rc.senseRubble(s);
-            if (r < leastRubble) {
-                best = left;
-                leastRubble = r;
-            }
-        }
-
-        right = right.rotateRight();
-        MapLocation sw = current.add(right);
-        if (rc.onTheMap(sw) && !rc.canSenseRobotAtLocation(sw)) {
-            r = rc.senseRubble(sw);
-            if (r < leastRubble) {
-                best = right;
-                leastRubble = r;
-            }
-        }
-
-        left = left.rotateLeft();
-        MapLocation w = current.add(left);
-        if (rc.onTheMap(w) && !rc.canSenseRobotAtLocation(w)) {
-            r = rc.senseRubble(w);
-            if (r < leastRubble) {
-                best = left;
-                leastRubble = r;
-            }
-        }
-
-        right = right.rotateRight();
-        MapLocation nw = current.add(right);
-        if (rc.onTheMap(nw) && !rc.canSenseRobotAtLocation(nw)) {
-            r = rc.senseRubble(nw);
-            if (r < leastRubble) {
-                best = right;
-                leastRubble = r;
-            }
-        }
-        return best;
-    }
 
     public Direction getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(MapLocation center, int dsq, Direction bias) throws GameActionException {
         MapLocation current = rc.getLocation();
@@ -712,11 +462,6 @@ public strictfp abstract class Robot {
         } else {
             Communications.addEnemyData(rc, rc.getLocation(), 0);
         }
-    }
-    
-    public static final int ALLIES_MULTIPLIER = 20;
-    public void broadcastAllies(MapLocation loc, int allies) throws GameActionException {
-        Communications.addAlliesData(rc, loc, allies * ALLIES_MULTIPLIER);
     }
 
     public Resource senseAllNearbyResources() throws GameActionException {

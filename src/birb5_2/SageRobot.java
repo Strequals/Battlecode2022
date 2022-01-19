@@ -1,4 +1,4 @@
-package trex;
+package birb5_2;
 
 import battlecode.common.*;
 
@@ -173,9 +173,6 @@ public strictfp class SageRobot extends Robot {
         }
 
         processAndBroadcastEnemies(nearbyRobots);
-        if (areDangerousEnemies) {
-            broadcastAllies(rc.getLocation(), allies);
-        }
     }
 
     public MapLocation tryAttack() throws GameActionException {

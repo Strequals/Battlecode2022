@@ -1,4 +1,4 @@
-package trex;
+package birb7;
 
 import battlecode.common.*;
 import java.util.Random;
