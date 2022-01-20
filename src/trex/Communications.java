@@ -7,6 +7,7 @@ public strictfp class Communications {
     private static final int ENEMIES_NUM = 8;
     private static final int ALLIES_START = 16;
     private static final int ALLIES_NUM = 8;
+    private static final int LAB_COUNT_INDEX = 54;  // current max lab count 63
     private static final int ARCHON_DATA_START = 55;
     private static final int PREV_INCOME_INDEX = 59;
     private static final int INCOME_INDEX = 60;
@@ -239,6 +240,19 @@ public strictfp class Communications {
     public static int getCurrMinerCount(RobotController rc) {
         return array[MINER_COUNT_INDEX];
     }
+
+    public static int getLabCount(RobotController rc) {
+        return array[LAB_COUNT_INDEX] >> 6;
+    }
+
+    public static void updateLabCount(RobotController rc) throws GameActionException {
+        rc.writeSharedArray(LAB_COUNT_INDEX, array[LAB_COUNT_INDEX] % 64 * 64);
+    }
+
+    public static void incrementLabCount(RobotController rc) throws GameActionException {
+        rc.writeSharedArray(LAB_COUNT_INDEX, array[LAB_COUNT_INDEX] + 1);
+    }
+
     public static void incrementMinerCount(RobotController rc) throws GameActionException {
         rc.writeSharedArray(MINER_COUNT_INDEX, array[MINER_COUNT_INDEX] + 1);
     }

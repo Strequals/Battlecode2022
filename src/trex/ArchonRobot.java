@@ -105,7 +105,8 @@ public strictfp class ArchonRobot extends Robot {
         if(activeArchon) {
             Communications.updateMinerCount(rc);
             Communications.clearOtherArchonData(rc);
-            updateIncome();
+            Communications.updateLabCount(rc);
+            // updateIncome();
         }
         else {
             int difference = Communications.getCurrMinerCount(rc) - Communications.getPrevMinerCount(rc);
@@ -113,7 +114,9 @@ public strictfp class ArchonRobot extends Robot {
             if(difference > archonCount || Communications.getCurrMinerCount(rc) > rc.getRobotCount() - archonCount) {
                 activeArchon = true;
                 Communications.updateMinerCount(rc);
-                updateIncome();
+                Communications.clearOtherArchonData(rc);
+                Communications.updateLabCount(rc);
+                // updateIncome();
             }
         }
     }

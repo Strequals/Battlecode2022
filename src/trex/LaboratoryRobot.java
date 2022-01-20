@@ -6,15 +6,30 @@ public strictfp class LaboratoryRobot extends Robot {
     private static final double MIN_LEAD = 100;
     private static final int TARGET_RATE = 3;  // will only transmute if rate is this or better
     private static final int MOVE_THRESHOLD = 6;  // threshold for friendlies before lab attempts to move
+    private static final int STOP_THRESHOLD = 5;
+
+    private MapLocation targetCorner;
 
     public LaboratoryRobot(RobotController rc) {
         super(rc);
+        findTargetCorner();
+    }
+
+    private void findTargetCorner() {
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+        MapLocation myLoc = rc.getLocation();
+
+        int x = myLoc.x > (width / 2) ? width : 0;
+        int y = myLoc.y > (height / 2) ? height : 0;
+        targetCorner = new MapLocation(x, y);
     }
 
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
-        
+        Communications.incrementLabCount(rc);
+
         switch (rc.getMode()) {
             case TURRET:
                 if (shouldBecomePortable() && rc.canTransform()) {
@@ -32,12 +47,16 @@ public strictfp class LaboratoryRobot extends Robot {
         }
     }
 
+    public boolean nearCorner() {
+        return rc.getLocation().distanceSquaredTo(targetCorner) < 2;
+    }
+
     public boolean shouldBecomePortable() {
-        return false;
+        return (friendlies > STOP_THRESHOLD) && !nearCorner();
     }
 
     public boolean shouldBecomeTurret() {
-        return false;
+        return friendlies < STOP_THRESHOLD || nearCorner();
     }
     
     RobotInfo[] nearbyRobots;
@@ -87,6 +106,13 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean tryMove() throws GameActionException {
+        if(rc.isMovementReady()) {
+            Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
+            if(rc.canMove(d)) {
+                rc.move(d);
+                return true;
+            }
+        }
         return false;
     }
 }
