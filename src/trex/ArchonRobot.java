@@ -106,6 +106,7 @@ public strictfp class ArchonRobot extends Robot {
             Communications.updateMinerCount(rc);
             Communications.clearOtherArchonData(rc);
             Communications.updateLabCount(rc);
+            Communications.updateBuilderCount(rc);
             // updateIncome();
         }
         else {
@@ -116,6 +117,7 @@ public strictfp class ArchonRobot extends Robot {
                 Communications.updateMinerCount(rc);
                 Communications.clearOtherArchonData(rc);
                 Communications.updateLabCount(rc);
+                Communications.updateBuilderCount(rc);
                 // updateIncome();
             }
         }

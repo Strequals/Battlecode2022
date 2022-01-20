@@ -31,6 +31,14 @@ public strictfp class SageRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }*/
 
+        if(!rc.isActionReady()) {
+            Direction moveDir = tryMove();
+            if(moveDir != null) {
+                if(rc.canMove(moveDir));
+                rc.move(moveDir);
+            }
+        }
+
         MapLocation attackBefore = tryAttack();
         boolean isBeforeDangerous = false;
         if (attackBefore != null) {
