@@ -1,4 +1,4 @@
-package trex;
+package birb7_2;
 
 import battlecode.common.*;
 
@@ -14,36 +14,13 @@ public strictfp class LaboratoryRobot extends Robot {
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
-        
-        switch (rc.getMode()) {
-            case TURRET:
-                if (shouldBecomePortable() && rc.canTransform()) {
-                    rc.transform();
-                } else {
-                    tryTransmute();
-                }
-                break;
-            case PORTABLE:
-                if (shouldBecomeTurret() && rc.canTransform()) {
-                    rc.transform();
-                } else {
-                    tryMove();
-                }
-        }
-    }
 
-    public boolean shouldBecomePortable() {
-        return false;
-    }
-
-    public boolean shouldBecomeTurret() {
-        return false;
+        tryTransmute();
     }
     
     RobotInfo[] nearbyRobots;
     int friendlies = 0;
     boolean areDangerousEnemies;
-    boolean spottedByEnemy = false;
     MapLocation fleeFrom;
     public void processNearbyRobots() throws GameActionException {
         Team team = rc.getTeam();
@@ -51,7 +28,6 @@ public strictfp class LaboratoryRobot extends Robot {
         int friendlyCount = 0;
         MapLocation myLoc = rc.getLocation();
         int minEnemyDistance = 999;
-        MapLocation current = rc.getLocation();
 
         processAndBroadcastEnemies(nearbyRobots);
 
@@ -71,9 +47,6 @@ public strictfp class LaboratoryRobot extends Robot {
                             fleeFrom = otherRobot.location;
                         }
                 }
-                if (current.isWithinDistanceSquared(otherRobot.location, otherRobot.type.visionRadiusSquared)) {
-                    spottedByEnemy = true;
-                }
             }
         }
         friendlies = friendlyCount;
@@ -84,9 +57,5 @@ public strictfp class LaboratoryRobot extends Robot {
         if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= TARGET_RATE) {
             rc.transmute();
         }
-    }
-
-    public boolean tryMove() throws GameActionException {
-        return false;
     }
 }

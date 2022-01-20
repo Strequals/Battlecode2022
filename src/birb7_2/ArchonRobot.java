@@ -1,4 +1,4 @@
-package trex;
+package birb7_2;
 
 import battlecode.common.*;
 
@@ -130,12 +130,10 @@ public strictfp class ArchonRobot extends Robot {
 
     RobotInfo[] nearbyRobots;
     MapLocation nearestEnemy;
-    boolean enemiesNearby;
-    boolean dangerousEnemiesNearby;
+    boolean enemiesNearby = false;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         enemiesNearby = false;
-        dangerousEnemiesNearby = false;
         nearestEnemy = null;
         int enemyDist = Integer.MAX_VALUE;
         int dist;
@@ -150,13 +148,6 @@ public strictfp class ArchonRobot extends Robot {
                         nearestEnemy = nearbyRobot.location;
                         enemyDist = dist;
                     }
-                }
-                switch (nearbyRobot.type) {
-                    case SOLDIER:
-                    case SAGE:
-                    case WATCHTOWER:
-                    case ARCHON:
-                        dangerousEnemiesNearby = true;
                 }
             }
         }
@@ -380,12 +371,7 @@ public strictfp class ArchonRobot extends Robot {
 
     public boolean tryRepair() throws GameActionException {
         if (!rc.isActionReady()) return false;
-        MapLocation repairable = null;
-        if (dangerousEnemiesNearby) {
-            repairable = identifyRepairableRobotWhileUnderAttack();
-        } else {
-            repairable = identifyRepairableRobot();
-        }
+        MapLocation repairable = identifyRepairableRobot();
         if (repairable != null && rc.canRepair(repairable)) {
             rc.repair(repairable);
             return true;
@@ -412,44 +398,7 @@ public strictfp class ArchonRobot extends Robot {
         return false;
     }
 
-    public static final int CRITICAL_HEALTH = 10;
-
     public MapLocation identifyRepairableRobot() throws GameActionException {
-        MapLocation best = null;
-        int health = Integer.MIN_VALUE;
-        boolean canAttack = false;
-        Team team = rc.getTeam();
-        boolean isCritical = false;
-        for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.mode == RobotMode.DROID) {
-                if (otherRobot.team == team
-                        && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)
-                        && otherRobot.health < otherRobot.type.getMaxHealth(otherRobot.level)) {
-                    if (otherRobot.type.canAttack()
-                            && otherRobot.mode.canAct) {
-                        if (otherRobot.health > health && !isCritical) {
-                            health = otherRobot.health;
-                            canAttack = true;
-                            best = otherRobot.location;
-                        } else if (otherRobot.health < CRITICAL_HEALTH && (!isCritical || otherRobot.health < health)) {
-                            isCritical = true;
-                            health = otherRobot.health;
-                            canAttack = true;
-                            best = otherRobot.location;
-                        }
-                    } else if (!canAttack) {
-                        if (otherRobot.health > health) {
-                            health = otherRobot.health;
-                            best = otherRobot.location;
-                        }
-                    }
-                }
-            }
-        }
-        return best;
-    }
-
-    public MapLocation identifyRepairableRobotWhileUnderAttack() throws GameActionException {
         MapLocation best = null;
         int health = Integer.MAX_VALUE;
         boolean canAttack = false;

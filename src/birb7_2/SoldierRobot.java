@@ -1,4 +1,4 @@
-package trex;
+package birb7_2;
 
 import battlecode.common.*;
 
@@ -15,7 +15,7 @@ public strictfp class SoldierRobot extends Robot {
     }
     
     public static final int ATTACK_DANGEROUS_RUBBLE = 25;
-    public static final int HEAL_HEALTH = 10;
+    public static final int HEAL_HEALTH = 20;
     public static final int MINER_BOOST = 10;
 
     @Override
@@ -406,7 +406,7 @@ public strictfp class SoldierRobot extends Robot {
      * Selects an opposing enemy in vision range by the same criteria as identifyTarget.
      */
 
-    /*public MapLocation findTarget() throws GameActionException {
+    public MapLocation findTarget() throws GameActionException {
         if (!areEnemiesNearby) return null;
         MapLocation best = null;
         int health = Integer.MAX_VALUE;
@@ -416,7 +416,6 @@ public strictfp class SoldierRobot extends Robot {
             if (otherRobot.team != rc.getTeam()) {
                 if (otherRobot.type.canAttack()
                         && otherRobot.mode.canAct) {
-                    s = score(otherRobot.health, rc.senseRubble(otherRobot.location), otherRobot.type.actionCooldown, damage, otherRobot.type.getDamage(otherRobot.level));
                     if (otherRobot.health < health
                             || (otherRobot.health == health
                                 && otherRobot.ID < id)) {
@@ -430,42 +429,6 @@ public strictfp class SoldierRobot extends Robot {
                             || (otherRobot.health == health
                                 && otherRobot.ID < id)) {
                         health = otherRobot.health;
-                        best = otherRobot.location;
-                        id = otherRobot.ID;
-                    }
-                }
-            }
-        }
-        return best;
-    }*/
-
-    public MapLocation findTarget() throws GameActionException {
-        if (!areEnemiesNearby) return null;
-        MapLocation best = null;
-        double health = Double.MAX_VALUE;
-        boolean canAttack = false;
-        int id = Integer.MAX_VALUE;
-        int damage = rc.getType().getDamage(rc.getLevel());
-        double s;
-        for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.team != rc.getTeam()) {
-                if (otherRobot.type.canAttack()
-                        && otherRobot.mode.canAct) {
-                    s = score(otherRobot.health, rc.senseRubble(otherRobot.location), otherRobot.type.actionCooldown, damage, otherRobot.type.getDamage(otherRobot.level));
-                    if (!canAttack || (s < health
-                            || (s == health
-                                && otherRobot.ID < id))) {
-                        health = s;
-                        canAttack = true;
-                        best = otherRobot.location;
-                        id = otherRobot.ID;
-                    }
-                } else if (!canAttack) {
-                    s = otherRobot.health;
-                    if (s < health
-                            || (s == health
-                                && otherRobot.ID < id)) {
-                        health = s;
                         best = otherRobot.location;
                         id = otherRobot.ID;
                     }
@@ -495,8 +458,6 @@ public strictfp class SoldierRobot extends Robot {
 
     public static final int MAX_RUBBLE_INCREASE = 10;
     public static final int TURNS_AVOID_RUBBLE = 6;
-    public static final int HEAL_DISTANCE_SUB = 4;
-    public static final int HEAL_DISTANCE_FACTOR = 2;
 
     public Direction tryMove() throws GameActionException {
         findTargets();
@@ -505,17 +466,8 @@ public strictfp class SoldierRobot extends Robot {
 
         if (!rc.isMovementReady()) return null;
 
-
-        MapLocation nearestArchon = Communications.getClosestArchon(rc);
-        /*int healHealth = HEAL_HEALTH;
-        int nearestArchonDistance = 1000000;
-        if (nearestArchon != null) {
-            nearestArchonDistance = (int) StrictMath.sqrt(nearestArchon.distanceSquaredTo(current));
-            healHealth = RobotType.SOLDIER.getMaxHealth(rc.getLevel()) - HEAL_DISTANCE_FACTOR * (nearestArchonDistance - HEAL_DISTANCE_SUB);
-            if (healHealth < HEAL_HEALTH) healHealth = HEAL_HEALTH;
-        }*/
-
-        if ((!areEnemiesNearby || nearestAlly == null) && rc.getHealth() < HEAL_HEALTH && !friendlyArchonNearby) {
+        if (!areEnemiesNearby && rc.getHealth() < HEAL_HEALTH && !friendlyArchonNearby) {
+            MapLocation nearestArchon = Communications.getClosestArchon(rc);
             if (nearestArchon != null) {
                 Direction d = Navigation.navigate(rc, rc.getLocation(), nearestArchon);
                 MapLocation to = current.add(d);
@@ -539,7 +491,7 @@ public strictfp class SoldierRobot extends Robot {
 
         if (fleeFrom != null
                 && (!isAllyInRange(fleeFrom, fleeAttackRadius) || maxDamageTaken >= rc.getHealth())
-                && (!friendlyArchonNearby || rc.getHealth() < HEAL_HEALTH)) {
+                && !friendlyArchonNearby) {
 
             Direction fleeDir = Navigation.flee(rc, current, fleeFrom);
             MapLocation fleeLoc = current.add(fleeDir);

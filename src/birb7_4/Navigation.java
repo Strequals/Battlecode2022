@@ -1,4 +1,4 @@
-package trex;
+package birb7_4;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -29,8 +29,10 @@ public strictfp class Navigation {
                     break;
             }
         }
-        if (bfs != null && Clock.getBytecodesLeft() >= 4000) {
+        if (bfs != null) {
+            int before = Clock.getBytecodeNum();
             Direction d = bfs.navigateBFS(rc, from, to);
+            rc.setIndicatorString("bfs bytecodes: " + (Clock.getBytecodeNum() - before));
             if (d != null) {
                 return d;
             }
