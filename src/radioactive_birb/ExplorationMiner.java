@@ -1,6 +1,7 @@
-package trex;
+package radioactive_birb;
 
 import battlecode.common.*;
+import trex.Exploration;
 
 public strictfp class ExplorationMiner extends Exploration {
     static boolean[][] explored;

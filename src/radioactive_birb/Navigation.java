@@ -1,6 +1,12 @@
-package trex;
+package radioactive_birb;
 
 import battlecode.common.*;
+import trex.BFS;
+import trex.BFSSoldier;
+import trex.BFSWatchtower;
+import trex.MinHeap;
+import trex.Robot;
+
 import java.util.Random;
 
 public strictfp class Navigation {
@@ -30,9 +36,7 @@ public strictfp class Navigation {
             }
         }
         if (bfs != null && Clock.getBytecodesLeft() >= 4000) {
-            int before = Clock.getBytecodeNum();
             Direction d = bfs.navigateBFS(rc, from, to);
-            rc.setIndicatorString("bfs bytecodes: " + (Clock.getBytecodeNum() - before));
             if (d != null) {
                 return d;
             }

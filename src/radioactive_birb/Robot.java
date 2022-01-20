@@ -1,6 +1,12 @@
-package trex;
+package radioactive_birb;
 
 import battlecode.common.*;
+import trex.Communications;
+import trex.Exploration;
+import trex.ExplorationMiner;
+import trex.Navigation;
+import trex.Resource;
+
 import java.util.Random;
 
 public strictfp abstract class Robot {
@@ -220,88 +226,88 @@ public strictfp abstract class Robot {
     }
     
     static Exploration exploration;
+    static MapLocation exploreStart = null;
     public MapLocation getExploreLocation() {
         if (exploration == null) {
             exploration = new ExplorationMiner(rc);
         }
+
+        if (exploreStart == null) {
+            exploreStart = rc.getLocation();
+        }
+        MapLocation current = rc.getLocation();
+        int sx = exploreStart.x;
+        int sy = exploreStart.y;
+        int cx = current.x;
+        int cy = current.y;
         int x = rng.nextInt(rc.getMapWidth());
         int y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+        int bestx = x;
+        int besty = y;
+        /*double deg = Integer.MIN_VALUE;
+        double d = ((x - cx) * (sx - cx) + (y - cy) * (sy - cy)) / Math.sqrt((y-cy)*(y-cy)+(x-cx)*(x-cx));
+        if (!exploration.hasExplored(x, y) && d > deg) {
+            bestx = x;
+            besty = y;
+            deg = d;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+        d = ((x - cx) * (sx - cx) + (y - cy) * (sy - cy)) / Math.sqrt((y-cy)*(y-cy)+(x-cx)*(x-cx));
+        if (!exploration.hasExplored(x, y) && d > deg) {
+            bestx = x;
+            besty = y;
+            deg = d;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+        d = ((x - cx) * (sx - cx) + (y - cy) * (sy - cy)) / Math.sqrt((y-cy)*(y-cy)+(x-cx)*(x-cx));
+        if (!exploration.hasExplored(x, y) && d > deg) {
+            bestx = x;
+            besty = y;
+            deg = d;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+        d = ((x - cx) * (sx - cx) + (y - cy) * (sy - cy)) / Math.sqrt((y-cy)*(y-cy)+(x-cx)*(x-cx));
+        if (!exploration.hasExplored(x, y) && d > deg) {
+            bestx = x;
+            besty = y;
+            deg = d;
+        }*/
+        int dist = Integer.MAX_VALUE;
+        int d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (!exploration.hasExplored(x, y) && d < dist) {
+            bestx = x;
+            besty = y;
+            dist = d;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+        d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (!exploration.hasExplored(x, y) && d < dist) {
+            bestx = x;
+            besty = y;
+            dist = d;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+        d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (!exploration.hasExplored(x, y) && d < dist) {
+            bestx = x;
+            besty = y;
+            dist = d;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+        d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (!exploration.hasExplored(x, y) && d < dist) {
+            bestx = x;
+            besty = y;
+            dist = d;
         }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
-        }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        return new MapLocation(x, y);
+        exploreStart = current;
+        return new MapLocation(bestx, besty);
 
     }
 
