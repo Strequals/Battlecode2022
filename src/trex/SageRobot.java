@@ -20,8 +20,6 @@ public strictfp class SageRobot extends Robot {
 
     @Override
     public void run() throws GameActionException {
-        //TODO
-
         processNearbyRobots();
         broadcastNearbyResources(isMinerNearby || !areDangerousEnemies ? 0 : MINER_BOOST);
         
@@ -30,57 +28,17 @@ public strictfp class SageRobot extends Robot {
         if (!areEnemiesNearby && !moved && !attacked && rc.isMovementReady() && rc.isActionReady()) {
             locationScore *= SCORE_DECAY;
         }*/
-
+        Direction moveDir = tryMove();
         if(!rc.isActionReady()) {
-            Direction moveDir = tryMove();
             if(moveDir != null) {
                 if(rc.canMove(moveDir));
                 rc.move(moveDir);
             }
         }
+        else if(!rc.isMovementReady()) {
 
-        MapLocation attackBefore = tryAttack();
-        boolean isBeforeDangerous = false;
-        if (attackBefore != null) {
-            isBeforeDangerous = rc.senseRobotAtLocation(attackBefore).type.canAttack();
         }
-        Direction moveDir = tryMove();
-        boolean attacked = false;
-        if (moveDir != null) {
-            MapLocation finalLoc = rc.getLocation().add(moveDir);
-            MapLocation attackAfter = tryAttack(finalLoc);
-            boolean isAfterDangerous = false;
-            if (attackAfter != null) {
-                isAfterDangerous = rc.senseRobotAtLocation(attackAfter).type.canAttack();
-            }
-            if (attackAfter != null) {
-                int finalRubble = rc.senseRubble(finalLoc);
-                int currentRubble = rc.senseRubble(rc.getLocation());
-                if (attackBefore == null
-                        || (finalRubble <= currentRubble && (!isBeforeDangerous || isAfterDangerous))
-                        || (finalRubble - currentRubble <= ATTACK_DANGEROUS_RUBBLE && isAfterDangerous && !isBeforeDangerous)) {
-                    rc.move(moveDir);
-                    nearbyRobots = rc.senseNearbyRobots();
-                    if ((attackAfter = tryAttack()) != null) {
-                        rc.attack(attackAfter);
-                        attacked = true;
-                    }
-                } else {
-                    rc.attack(attackBefore);
-                    rc.move(moveDir);
-                    attacked = true;
-                }
-            } else if (attackBefore != null) {
-                rc.attack(attackBefore);
-                rc.move(moveDir);
-                attacked = true;
-            } else {
-                rc.move(moveDir);
-            }
-        } else if (attackBefore != null) {
-            rc.attack(attackBefore);
-            attacked = true;
-        }
+
 
         if (!areEnemiesNearby && (moveDir == null) && rc.isMovementReady() && rc.isActionReady()) {
             locationScore *= SCORE_DECAY;
@@ -92,6 +50,7 @@ public strictfp class SageRobot extends Robot {
     RobotInfo[] nearbyRobots;
     boolean areEnemiesNearby;
     boolean areDangerousEnemies;
+    boolean inRange;
     MapLocation friendlyArchonPos;
     boolean friendlyArchonNearby;
     MapLocation nearestAlly;
@@ -186,6 +145,8 @@ public strictfp class SageRobot extends Robot {
         }
     }
 
+    
+
     public MapLocation tryAttack() throws GameActionException {
         if (rc.isActionReady()) {
             MapLocation target = identifyTarget();
@@ -206,66 +167,6 @@ public strictfp class SageRobot extends Robot {
         return null;
     }
     
-    /**
-     * Targets the opposing enemy with the lowest health, prioritizing units that can attack;
-     * returns null if no such enemy is found.
-     **/
-    /*public MapLocation identifyTarget() throws GameActionException {
-        if (!areEnemiesNearby) return null;
-        MapLocation best = null;
-        int health = Integer.MAX_VALUE;
-        boolean canAttack = false;
-        for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.team != rc.getTeam()
-                    && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.SOLDIER.actionRadiusSquared)) {
-                if (otherRobot.type.canAttack()
-                        && otherRobot.mode.canAct
-                        && rc.getLocation().isWithinDistanceSquared(otherRobot.location, otherRobot.type.actionRadiusSquared)) {
-                    if (otherRobot.health < health) {
-                        health = otherRobot.health;
-                        canAttack = true;
-                        best = otherRobot.location;
-                    }
-                } else if (!canAttack) {
-                    if (otherRobot.health < health) {
-                        health = otherRobot.health;
-                        best = otherRobot.location;
-                    }
-                }
-            }
-        }
-        return best;
-    }*/
-
-    /**
-     * Selects an opposing enemy in vision range by the same criteria as identifyTarget.
-     */
-
-    /*public MapLocation findTarget() throws GameActionException {
-        if (!areEnemiesNearby) return null;
-        MapLocation best = null;
-        int health = Integer.MAX_VALUE;
-        boolean canAttack = false;
-        for (RobotInfo otherRobot : nearbyRobots) {
-            if (otherRobot.team != rc.getTeam()) {
-                if (otherRobot.type.canAttack()
-                        && otherRobot.mode.canAct) {
-                    if (otherRobot.health < health) {
-                        health = otherRobot.health;
-                        canAttack = true;
-                        best = otherRobot.location;
-                    }
-                } else if (!canAttack) {
-                    if (otherRobot.health < health) {
-                        health = otherRobot.health;
-                        best = otherRobot.location;
-                    }
-                }
-            }
-        }
-        return best;
-    }*/
-
     public static final double VALUE_THRESHOLD = 0.1;
     public static final int DISTANCE_THRESHOLD = 100;
 
