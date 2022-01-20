@@ -29,7 +29,7 @@ public strictfp class Navigation {
                     break;
             }
         }
-        if (bfs != null) {
+        if (bfs != null && Clock.getBytecodesLeft() >= 4000) {
             int before = Clock.getBytecodeNum();
             Direction d = bfs.navigateBFS(rc, from, to);
             rc.setIndicatorString("bfs bytecodes: " + (Clock.getBytecodeNum() - before));

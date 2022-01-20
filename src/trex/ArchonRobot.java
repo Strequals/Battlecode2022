@@ -381,11 +381,11 @@ public strictfp class ArchonRobot extends Robot {
     public boolean tryRepair() throws GameActionException {
         if (!rc.isActionReady()) return false;
         MapLocation repairable = null;
-        if (dangerousEnemiesNearby) {
+        //if (dangerousEnemiesNearby) {
             repairable = identifyRepairableRobotWhileUnderAttack();
-        } else {
-            repairable = identifyRepairableRobot();
-        }
+        //} else {
+        //    repairable = identifyRepairableRobot();
+        //}
         if (repairable != null && rc.canRepair(repairable)) {
             rc.repair(repairable);
             return true;
