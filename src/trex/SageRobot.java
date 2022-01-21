@@ -297,7 +297,7 @@ public strictfp class SageRobot extends Robot {
 
         // it's ok if enemiesAtLoc is empty because min score is checked, and default score is 0
         for(RobotInfo enemy: enemiesAtLoc) {
-            double score = ((Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? 20 : 0)) / rubbleAtLoc) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT);
+            double score = ((Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? 20 : 0)) / rubbleAtLoc) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT * 0.01);
             if(score < bestScore) {
                 bestScore = score;
                 bestLoc = enemy.getLocation();
