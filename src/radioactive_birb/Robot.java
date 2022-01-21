@@ -1,11 +1,6 @@
 package radioactive_birb;
 
 import battlecode.common.*;
-import trex.Communications;
-import trex.Exploration;
-import trex.ExplorationMiner;
-import trex.Navigation;
-import trex.Resource;
 
 import java.util.Random;
 

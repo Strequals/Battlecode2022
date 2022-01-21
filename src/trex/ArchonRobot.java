@@ -19,18 +19,23 @@ public strictfp class ArchonRobot extends Robot {
 
     private static final double WEIGHT_DECAY = 0.5;
 
+    private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 2;
+
+    int soldiersProduced;
+
     MapLocation allyLocation;
 
     public ArchonRobot(RobotController rc) throws GameActionException {
         super(rc);
         minerWeight = 16;
         soldierWeight = -8;
-        builderWeight = -64;
+        builderWeight = 0;
         Communications.calculateArchonNumber(rc);
         explorationMiners = (int) (MINER_RATIO * rc.getMapWidth() * rc.getMapHeight()) + BASE_MIN_MINER;
         exploring = true;
         portableTurns = 0;
         turnsIdled = 0;
+        soldiersProduced = 0;
     }
 
     @Override
@@ -41,13 +46,15 @@ public strictfp class ArchonRobot extends Robot {
         tryActivate();
         switch (rc.getMode()) {
             case TURRET:
-                boolean built = tryBuild();
+                boolean built = shouldBuild() && tryBuild();
+                rc.setIndicatorString("shouldbuild?" + shouldBuild() + "built: " + built + "hpa: " + Communications.countHigherPriorityArchons(rc));
                 boolean repaired = tryRepair();
                 
                 if (shouldBecomePortable() && rc.canTransform()) {
                     findAllyLocation();
                     if (allyLocation != null) {
                         rc.transform();
+                        Communications.zeroArchonPriority(rc);
                         portableTurns = 0;
                     }
                 }
@@ -83,7 +90,12 @@ public strictfp class ArchonRobot extends Robot {
                 + Communications.countHigherPriorityArchons(rc) + " "
                 + rc.getTeamLeadAmount(rc.getTeam()));*/
 
-        rc.setIndicatorString("miners:" + Communications.getPrevMinerCount(rc));
+        //rc.setIndicatorString("shouldBuild: " + shouldBuild() + "builders:" + Communications.getBuilderCount(rc) + "labs: " + Communications.getLabCount(rc) +  "exploring: " + exploring + "den: " + dangerousEnemiesNearby);
+    }
+
+    public boolean shouldBuild() {
+        boolean isWaitingForLab = Communications.getBuilderCount(rc) > 0 && Communications.getLabCount(rc) < LABS;
+        return (!isWaitingForLab || rc.getTeamGoldAmount(rc.getTeam()) < 20 || rc.getTeamLeadAmount(rc.getTeam()) >= 275) || dangerousEnemiesNearby;
     }
 
     public final int TURNS_IDLE = 20;
@@ -228,30 +240,22 @@ public strictfp class ArchonRobot extends Robot {
         soldierWeight += BASE_SOLDIER_WEIGHT + bonus;
     }
     
-    private static final double RESOURCE_PENALTY = 0.0002;
-    private static final double BASE_BUILDER_WEIGHT = 0;
-    private static final double MAX_RESOURCE_PENALTY = 1.5;
+    private static final double BASE_BUILDER_WEIGHT = 10;
 
-    public double builderWeightMultiplier() throws GameActionException {
-        int roundNum = rc.getRoundNum();
-        if (roundNum <= 50) {
-            return roundNum / 50.0;
-        } else {
-            return 1;
-        }
-    }
-    
+    public static final int BUILDERS = 1;
+    public static final int LABS = 1;
     public void updateBuilderWeight(double totalResources) throws GameActionException {
-        double penalty = RESOURCE_PENALTY * totalResources;
-        if (penalty > MAX_RESOURCE_PENALTY) {
-            penalty = MAX_RESOURCE_PENALTY;
+        if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < LABS && !exploring && soldiersProduced >= PRODUCE_SOLDIERS_BEFORE_BUILDER) {
+            builderWeight += BASE_BUILDER_WEIGHT;
+        } else {
+            builderWeight = 0;
         }
-        builderWeight += builderWeightMultiplier() * (BASE_BUILDER_WEIGHT - penalty);
     }
     
     public static final int MOST_EXPENSIVE_UNIT_PRICE_LEAD = 75;
     public boolean tryBuild() throws GameActionException {
-        if ((1 + Communications.countHigherPriorityArchons(rc)) * MOST_EXPENSIVE_UNIT_PRICE_LEAD
+        int hpa = Communications.countHigherPriorityArchons(rc);
+        if (hpa > 0 && (1 + Communications.countHigherPriorityArchons(rc)) * MOST_EXPENSIVE_UNIT_PRICE_LEAD
                 > rc.getTeamLeadAmount(rc.getTeam())) {
             Communications.incrementArchonPriority(rc);
             return false;
@@ -316,6 +320,8 @@ public strictfp class ArchonRobot extends Robot {
                 break;
         }
 
+        rc.setIndicatorString("tried building " + type + " in direction " + d);
+
         if (tryBuild(type, d)) {
             switch (type) {
                 case MINER:
@@ -325,6 +331,7 @@ public strictfp class ArchonRobot extends Robot {
                 case SOLDIER:
                     soldierWeight *= WEIGHT_DECAY;
                     Communications.correctIncome(rc, 75);
+                    soldiersProduced++;
                     break;
                 case BUILDER:
                     builderWeight *= WEIGHT_DECAY;
@@ -497,12 +504,15 @@ public strictfp class ArchonRobot extends Robot {
     }
 
     public boolean tryMove() throws GameActionException {
-        Direction d = Navigation.navigate(rc, rc.getLocation(), allyLocation);
-        if (d != null && rc.canMove(d)) {
-            rc.move(d);
-            return true;
+        if (allyLocation != null) {
+            Direction d = Navigation.navigate(rc, rc.getLocation(), allyLocation);
+            if (d != null && rc.canMove(d)) {
+                rc.move(d);
+                return true;
+            }
         }
-        return false;
+
+        return tryMoveToLowerRubble();
     }
 
     public boolean tryMoveToLowerRubble() throws GameActionException {

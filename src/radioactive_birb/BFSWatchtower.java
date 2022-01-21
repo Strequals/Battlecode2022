@@ -1,6 +1,5 @@
 package radioactive_birb;
 import battlecode.common.*;
-import trex.BFS;
 public strictfp class BFSWatchtower extends BFS {
     static MapLocation l_n5_n3;
     static double v_n5_n3;

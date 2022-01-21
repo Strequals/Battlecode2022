@@ -1,6 +1,5 @@
 package radioactive_birb;
 import battlecode.common.*;
-import trex.BFS;
 public strictfp class BFSSoldier extends BFS {
     static MapLocation l_n4_n2;
     static double v_n4_n2;

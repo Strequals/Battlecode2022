@@ -1,14 +1,6 @@
 package radioactive_birb;
 
 import battlecode.common.*;
-import trex.ArchonRobot;
-import trex.BuilderRobot;
-import trex.LaboratoryRobot;
-import trex.MinerRobot;
-import trex.Robot;
-import trex.SageRobot;
-import trex.SoldierRobot;
-import trex.WatchtowerRobot;
 
 public strictfp class RobotPlayer {
 

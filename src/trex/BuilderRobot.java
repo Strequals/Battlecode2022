@@ -24,31 +24,37 @@ public strictfp class BuilderRobot extends Robot {
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
+        Communications.incrementBuilderCount(rc);
         calculateShouldMutateLevel();
         boolean repaired = tryRepair();
         boolean mutated = tryMutate();
         boolean built = tryBuild();
-        if (!repaired && !mutated && !built) trySeed();
         if (tryMove()) {
-            repaired = tryRepair();
-            mutated = tryMutate();
-            built = tryBuild();
+            repaired = repaired || tryRepair();
+            mutated = mutated || tryMutate();
+            built = built || tryBuild();
             if (!repaired && !mutated && !built) {
-                trySeed();
                 locationScore *= SCORE_DECAY;
             }
         }
     }
     
     RobotInfo[] nearbyRobots;
+    boolean labNearby;
+    boolean spottedByEnemy;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         MapLocation fleeFrom = null;
         int fleeDistanceSquared = Integer.MAX_VALUE;
         processAndBroadcastEnemies(nearbyRobots);
+        labNearby = false;
+        MapLocation current = rc.getLocation();
+        spottedByEnemy = false;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == rc.getTeam()) {
-
+                if (otherRobot.type == RobotType.LABORATORY) {
+                    labNearby = true;
+                }
             } else {
                 if (otherRobot.type.canAttack() && otherRobot.mode.canAct) {
                     MapLocation attackedFrom;
@@ -63,6 +69,9 @@ public strictfp class BuilderRobot extends Robot {
                         fleeFrom = attackedFrom;
                     }
                 }
+                if (otherRobot.location.isWithinDistanceSquared(current, otherRobot.type.visionRadiusSquared)) {
+                    spottedByEnemy = true;
+                }
             }
         }
 
@@ -73,7 +82,7 @@ public strictfp class BuilderRobot extends Robot {
         }
     }
 
-    public void trySeed() throws GameActionException {
+    /*public void trySeed() throws GameActionException {
         MapLocation loc = rc.getLocation();
         if(rc.senseLead(loc) == 0) {
             rc.disintegrate();
@@ -96,8 +105,9 @@ public strictfp class BuilderRobot extends Robot {
         }
 
         return best;
-    }
-
+    }*/
+    
+    public static final int WATCHTOWER_THRESHOLD = 1000;
     /*
     *  returns true on success, false otherwise
     */
@@ -116,32 +126,55 @@ public strictfp class BuilderRobot extends Robot {
         else {
             return tryBuild(RobotType.LABORATORY);
         }*/
+        if (Communications.getLabCount(rc) < ArchonRobot.LABS) {
+            return tryBuild(RobotType.LABORATORY);
+        } else if (rc.getTeamLeadAmount(rc.getTeam()) > WATCHTOWER_THRESHOLD) {
+            return tryBuild(RobotType.WATCHTOWER);
+        }
 
-        return tryBuild(RobotType.WATCHTOWER);
+        return false;
     }
 
     public boolean shouldBuild() {
-        return rc.getTeamLeadAmount(rc.getTeam()) >= BUILD_THRESHOLD;
+        //TODO: do not build if an archon is under attack
+        return true;
     }
 
     public boolean tryBuild(RobotType type) throws GameActionException {
         if (!rc.isActionReady()) return false;
+
+        if (type == RobotType.LABORATORY) {
+            if (spottedByEnemy) {
+                return false;
+            }
+        }
+        
         MapLocation current = rc.getLocation();
         MapLocation loc;
+        Direction best = null;
+        int rubble = 101;
+        int r;
         for (Direction d : directions) {
-            loc = current.add(d);
-            if (validBuildLocation(loc) && rc.canBuildRobot(type, d)) {
-                if (rc.canSenseLocation(loc) && rc.senseLead(loc) > 0) {
-                    rc.buildRobot(type, d);
-                    if(type == RobotType.LABORATORY) {
-                        Communications.correctIncome(rc, 800);
-                    }
-                    else {
-                        Communications.correctIncome(rc, 180);
-                    }
-                    return true;
+            if (rc.canBuildRobot(type, d)) {
+                loc = current.add(d);
+                r = rc.senseRubble(loc);
+                if (r < rubble) {
+                    best = d;
+                    rubble = r;
+                    
                 }
             }
+        }
+
+        if (best != null) {
+            rc.buildRobot(type, best);
+            if (type == RobotType.LABORATORY) {
+                Communications.correctIncome(rc, 180);
+            }
+            else {
+                Communications.correctIncome(rc, 150);
+            }
+            return true;
         }
 
         return false;
@@ -226,15 +259,19 @@ public strictfp class BuilderRobot extends Robot {
             }
         }
 
-        MapLocation seedLocation = findSeedLocation();
+        /*MapLocation seedLocation = findSeedLocation();
         if (seedLocation != null) {
             targetLocation = seedLocation;
             locationScore = 1;
             return;
-        }
+        }*/
         
         if (targetLocation == null) {
-            targetLocation = getRandomLocation();
+            if (Communications.getLabCount(rc) < ArchonRobot.LABS) {
+                targetLocation = findTargetCorner();
+            } else {
+                targetLocation = getRandomLocation();
+            }
         }
     }
 
@@ -297,19 +334,19 @@ public strictfp class BuilderRobot extends Robot {
     }
 
     /*
-    *  searches for a spot on odd x and y, not occupied (should also maybe make sure no archons are nearby)
+    *  searches for a not occupied (should also maybe make sure no archons are nearby)
     */
     public MapLocation findBuildLocation() throws GameActionException {
         MapLocation current = rc.getLocation();
         MapLocation best = null;
-        int bestDist = Integer.MAX_VALUE;
-        int dist;
-        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), RobotType.BUILDER.visionRadiusSquared)) {
-            dist = check.distanceSquaredTo(current);
-            if (dist < bestDist) {
-                if (validBuildLocation(check) && !rc.canSenseRobotAtLocation(check)) {
+        int bestRubble = Integer.MAX_VALUE;
+        int rubble;
+        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 8)) {
+            rubble = rc.senseRubble(check);
+            if (rubble < bestRubble) {
+                if (!rc.canSenseRobotAtLocation(check)) {
                     best = check;
-                    bestDist = dist;
+                    bestRubble = rubble;
                 }
             }
         }

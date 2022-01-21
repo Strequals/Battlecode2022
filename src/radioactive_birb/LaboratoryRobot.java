@@ -1,7 +1,6 @@
 package radioactive_birb;
 
 import battlecode.common.*;
-import trex.Robot;
 
 public strictfp class LaboratoryRobot extends Robot {
     private static final double MIN_LEAD = 100;

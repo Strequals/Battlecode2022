@@ -1,6 +1,5 @@
 package radioactive_birb;
 
-import trex.Pair;
 
 public strictfp class MinHeap<T> {
 

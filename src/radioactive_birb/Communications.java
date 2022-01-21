@@ -1,6 +1,5 @@
 package radioactive_birb;
 import battlecode.common.*;
-import trex.Resource;
 public strictfp class Communications {
     private static final int RESOURCE_START = 0;
     private static final int RESOURCE_NUM = 8;

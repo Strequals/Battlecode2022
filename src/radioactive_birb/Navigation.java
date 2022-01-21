@@ -1,11 +1,6 @@
 package radioactive_birb;
 
 import battlecode.common.*;
-import trex.BFS;
-import trex.BFSSoldier;
-import trex.BFSWatchtower;
-import trex.MinHeap;
-import trex.Robot;
 
 import java.util.Random;
 

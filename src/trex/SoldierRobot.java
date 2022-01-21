@@ -576,14 +576,14 @@ public strictfp class SoldierRobot extends Robot {
                     //stick to allies
                     Direction bias = current.directionTo(nearestAlly);
                     lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, bias);
-                    if (diff(lowest, bias) <= 1) {
+                    if (lowest != null && diff(lowest, bias) <= 1) {
                         takeOverEqual = true;
                     }
                 } else {
                     //rotate around enemies to find allies
                     Direction d = nearestEnemy.directionTo(current).rotateLeft();
                     lowest = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(nearestEnemy, RobotType.SOLDIER.actionRadiusSquared, d);
-                    if (diff(lowest, d) <= 1) {
+                    if (lowest != null && diff(lowest, d) <= 1) {
                         takeOverEqual = true;
                     }
                 }

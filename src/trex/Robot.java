@@ -782,4 +782,14 @@ public strictfp abstract class Robot {
         return (l.x % 2 == 0) && (l.y % 2 == 0);
     }
 
+    public MapLocation findTargetCorner() {
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+        MapLocation myLoc = rc.getLocation();
+
+        int x = myLoc.x > (width / 2) ? width : 0;
+        int y = myLoc.y > (height / 2) ? height : 0;
+        return new MapLocation(x, y);
     }
+
+}
