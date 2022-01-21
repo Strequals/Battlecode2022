@@ -3,42 +3,103 @@ package trex;
 import battlecode.common.*;
 
 public strictfp class SageRobot extends Robot {
+    private enum AttackType {
+        REGULAR,
+        ABYSS,  // destroy resources
+        CHARGE,  // droids
+        FURY // buildings
+    }
+
+    private class Attack {
+        MapLocation loc;
+        AttackType type;
+        double score;
+
+        public Attack(MapLocation m, AttackType a, double s) {
+            loc = m;
+            type = a;
+            score = s;
+        }
+    }
 
     MapLocation targetLocation;
     double locationScore;
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_TARGET_THRESHOLD = 0.1;
+    static final double NON_DAMAGING_MULT = 0.33;  // multiplier to score for damaging a miner
+    static final double LEAD_VALUE = 0.5;  // value of lead compared to damage
     static final int GIVE_UP_RADIUS_SQUARED = 2;
+    // static final int THREAT_THRESHOLD = 6;
+    static final int FRIENDLY_DAMAGE_MULT = 1000;  // multiplier to penalty for damaging friendly buildings
+    static final int KILL_POINTS = 20;  // additional score for killing a unit
+    static final int MIN_SCORE = 20;
+    static final boolean DENSITY_PREDICTION = true; 
 
     public SageRobot(RobotController rc) {
         super(rc);
     }
 
     public static final int ATTACK_DANGEROUS_RUBBLE = 25;
-    public static final int HEAL_HEALTH = 10;
+    public static final int HEAL_HEALTH = 20;
     public static final int MINER_BOOST = 15; // 20% of 75 lead of a s
 
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
         broadcastNearbyResources(isMinerNearby || !areDangerousEnemies ? 0 : MINER_BOOST);
-        
+
+        if(DENSITY_PREDICTION) {
+            calculateEnemyDensity();
+        }
+
         /*Direction moved = tryMove();
         boolean attacked = tryAttack();
         if (!areEnemiesNearby && !moved && !attacked && rc.isMovementReady() && rc.isActionReady()) {
             locationScore *= SCORE_DECAY;
         }*/
         Direction moveDir = tryMove();
-        if(!rc.isActionReady()) {
-            if(moveDir != null) {
-                if(rc.canMove(moveDir));
+        if(moveDir != null) {
+            if(rc.canMove(moveDir)) {
                 rc.move(moveDir);
             }
         }
-        else if(!rc.isMovementReady()) {
-
+        if(rc.isActionReady()) {
+            Attack a = tryAttack();
+            if(a != null) {
+                switch(a.type) {
+                    case REGULAR: 
+                        if(rc.canAttack(a.loc)) {
+                            rc.attack(a.loc);
+                        }
+                        break;
+                    case ABYSS:
+                        if(rc.canEnvision(AnomalyType.ABYSS)) {
+                            rc.envision(AnomalyType.ABYSS);
+                        }
+                        break;
+                    case CHARGE:
+                        if(rc.canEnvision(AnomalyType.CHARGE)) {
+                            rc.envision(AnomalyType.CHARGE);
+                        }
+                        break;
+                    case FURY:
+                        if(rc.canEnvision(AnomalyType.FURY)) {
+                            rc.envision(AnomalyType.FURY);
+                        }
+                        break;
+                }
+            }
         }
 
+        // update again after attack if movement ready
+        if(rc.isMovementReady()) {
+            moveDir = tryMove();
+            if(moveDir != null) {
+                if(rc.canMove(moveDir)) {
+                    rc.move(moveDir);
+                }
+            }
+        }
 
         if (!areEnemiesNearby && (moveDir == null) && rc.isMovementReady() && rc.isActionReady()) {
             locationScore *= SCORE_DECAY;
@@ -47,12 +108,14 @@ public strictfp class SageRobot extends Robot {
         rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
     }
 
+    RobotInfo[] enemies;
     RobotInfo[] nearbyRobots;
     boolean areEnemiesNearby;
     boolean areDangerousEnemies;
-    boolean inRange;
     MapLocation friendlyArchonPos;
     boolean friendlyArchonNearby;
+    boolean enemyArchonNearby;
+    boolean enemyMinerNearby;
     MapLocation nearestAlly;
     MapLocation nearestEnemy;
     MapLocation fleeFrom;
@@ -63,6 +126,7 @@ public strictfp class SageRobot extends Robot {
     boolean isMinerNearby;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
+        enemies = rc.senseNearbyRobots(34, rc.getTeam().opponent());  //
         fleeFrom = null;
         areEnemiesNearby = false;
         areDangerousEnemies = false;
@@ -129,6 +193,13 @@ public strictfp class SageRobot extends Robot {
                     case SAGE:
                     case WATCHTOWER:
                         areDangerousEnemies = true;
+                        break;
+                    case ARCHON:
+                        enemyArchonNearby = true;
+                        break;
+                    case MINER:
+                        enemyMinerNearby = true;
+                        break;
                 }
             }
         }
@@ -145,28 +216,148 @@ public strictfp class SageRobot extends Robot {
         }
     }
 
-    
-
-    public MapLocation tryAttack() throws GameActionException {
-        if (rc.isActionReady()) {
-            MapLocation target = identifyTarget();
-            if (target != null) {
-                return target;
-            }
-        }
-        return null;
+    public Attack tryAttack() throws GameActionException {
+        return tryAttack(rc.getLocation());  // bit of a waste but im lazy
     }
 
-    public MapLocation tryAttack(MapLocation next) throws GameActionException {
+    private double enemyDensity = 0;
+    public Attack tryAttack(MapLocation loc) throws GameActionException {
         if (rc.isActionReady()) {
-            MapLocation target = identifyTarget(next);
-            if (target != null) {
-                return target;
-            }
+            Attack result = score(loc);
+            return result;
         }
         return null;
     }
     
+    // hp density
+    public void calculateEnemyDensity() {
+        int totalHP = 0;
+        int x_min = 1000;
+        int x_max = 0;
+        int y_min = 1000;
+        int y_max = 0;
+        for(RobotInfo robot: enemies) {
+            switch(robot.type) {
+                case SOLDIER:
+                case MINER:
+                case SAGE:
+                case BUILDER:
+                    totalHP += robot.type.getMaxHealth(robot.getLevel());
+                    MapLocation enemyLoc = robot.getLocation();
+                    if(enemyLoc.x < x_min) {
+                        x_min = enemyLoc.x;
+                    }
+                    if(enemyLoc.x > x_max) {
+                        x_max = enemyLoc.x;
+                    }
+                    if(enemyLoc.y < y_min) {
+                        y_min = enemyLoc.y;
+                    }
+                    if(enemyLoc.y > y_max) {
+                        y_max = enemyLoc.y;
+                    }
+            }
+        }
+
+        enemyDensity = totalHP == 0 ? 0 : totalHP / ((x_max - x_min) * (y_max - y_min));
+    }
+
+    // kills * KILL_SCORE + damage + 22 * enemyDensity * revealedSquares / (rubble / 10)
+    // returns best course of action from loc, or null if there is no good options
+    RobotInfo[] enemiesAtLoc;
+    int rubbleAtLoc;
+    int maxDamageTakenAtLoc;
+    public Attack score(MapLocation loc) throws GameActionException {
+        enemiesAtLoc = rc.senseNearbyRobots(25, rc.getTeam().opponent());
+        rubbleAtLoc = rc.senseRubble(loc);
+        maxDamageTakenAtLoc = 0;
+
+        Attack best = scoreReg(loc);
+        Attack abyss = scoreAbyss(loc);
+        Attack charge = scoreCharge(loc);
+        Attack fury = scoreFury(loc);
+
+        if(abyss.score > best.score) {
+            best = abyss;
+        }
+        if(charge.score > best.score) {
+            best = charge;
+        }
+        if(fury.score > best.score) {
+            best = fury;
+        }
+
+        return best.score <= MIN_SCORE ? null : best;
+    }
+
+    public Attack scoreReg(MapLocation loc) throws GameActionException {
+        double bestScore = 0;
+        MapLocation bestLoc = null;
+        MapLocation myLoc = rc.getLocation();
+
+        // it's ok if enemiesAtLoc is empty because min score is checked, and default score is 0
+        for(RobotInfo enemy: enemiesAtLoc) {
+            double score = ((Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? 20 : 0)) / rubbleAtLoc) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT);
+            if(score < bestScore) {
+                bestScore = score;
+                bestLoc = enemy.getLocation();
+            }
+
+            if(myLoc.distanceSquaredTo(enemy.getLocation()) <= enemy.type.actionRadiusSquared) {
+                maxDamageTakenAtLoc += enemy.type.getDamage(enemy.getLevel());
+            }
+        }
+
+        return new Attack(bestLoc, AttackType.REGULAR, bestScore);
+    }
+
+    public Attack scoreAbyss(MapLocation loc) {
+        if(!friendlyArchonNearby && enemyMinerNearby && !isMinerNearby) {
+            return new Attack(loc, AttackType.ABYSS, leadWithinAction * 0.99 * LEAD_VALUE);
+        }
+        else {
+            return new Attack(null, null, 0);
+        }
+    }
+
+    public Attack scoreCharge(MapLocation loc) {
+        MapLocation myLoc = rc.getLocation();
+        double score = (Math.abs(loc.x - myLoc.x) + Math.abs(loc.y - myLoc.y)) * enemyDensity;
+        for(RobotInfo enemy: enemiesAtLoc) {
+            switch(enemy.type) {
+                case MINER:
+                case BUILDER:
+                    if(myLoc.distanceSquaredTo(enemy.getLocation()) <= 25) {
+                        score += 0.22 * enemy.type.getMaxHealth(enemy.getLevel()) * NON_DAMAGING_MULT;
+                    }
+                    break;
+                case SAGE:
+                case SOLDIER:
+                    if(myLoc.distanceSquaredTo(enemy.getLocation()) <= 25) {
+                        score += 0.22 * enemy.type.getMaxHealth(enemy.getLevel());
+                    }
+                    break;
+            }
+        }
+        return new Attack(loc, AttackType.CHARGE, score);
+    }
+    
+    public Attack scoreFury(MapLocation loc) {
+        double score = 0;
+        Team team = rc.getTeam();
+        for(RobotInfo robot: nearbyRobots) {
+            if(robot.getMode() == RobotMode.TURRET) {
+                if(robot.team == team) {
+                    score -= robot.type.getMaxHealth(robot.getLevel()) * FRIENDLY_DAMAGE_MULT;
+                }
+                else {
+                    score += robot.type.getMaxHealth(robot.getLevel());
+                }
+            }
+        }
+        return new Attack(loc, AttackType.FURY, score);
+    }
+
     public static final double VALUE_THRESHOLD = 0.1;
     public static final int DISTANCE_THRESHOLD = 100;
 
@@ -496,5 +687,50 @@ public strictfp class SageRobot extends Robot {
         return null;
     }
 
+    int leadWithinAction = 0;
+    @Override
+    public Resource senseAllNearbyResources() throws GameActionException {
+        int lead;
+        int gold;
+        int dsq;
+        MapLocation best = null;
+        int bestDsq = Integer.MAX_VALUE;
+        int bestScore = Integer.MIN_VALUE;
+        MapLocation current = rc.getLocation();
+        leadWithinAction = 0;
+        int totalLead = 0;
+        int totalGold = 0;
+        for (MapLocation l : rc.senseNearbyLocationsWithGold(rc.getType().visionRadiusSquared)) {
+            gold = rc.senseGold(l);
+            dsq = current.distanceSquaredTo(l);
+            totalGold += gold;
+            if (dsq < bestDsq
+                    || (dsq == bestDsq && gold > bestScore)) {
+                best = l;
+                bestDsq = dsq;
+                bestScore = gold;
+            }
+        }
 
+        if (best == null) {
+            for (MapLocation l : rc.senseNearbyLocationsWithLead(rc.getType().visionRadiusSquared)) {
+                lead = rc.senseLead(l) - 1;
+                dsq = current.distanceSquaredTo(l);
+                totalLead += lead;
+                if(dsq <= 25) {
+                    leadWithinAction += lead + 1;
+                }
+                if (lead > 0 && (dsq < bestDsq
+                        || (dsq == bestDsq && lead > bestScore))) {
+                    best = l;
+                    bestDsq = dsq;
+                    bestScore = lead;
+                }
+            }
+        }
+        if (best != null) {
+            return new Resource(best, totalLead, totalGold);
+        }
+        return null;
+    }
 }
