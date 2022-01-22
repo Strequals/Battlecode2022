@@ -119,18 +119,19 @@ public strictfp class ArchonRobot extends Robot {
             Communications.clearOtherArchonData(rc);
             Communications.updateLabCount(rc);
             Communications.updateBuilderCount(rc);
-            // updateIncome();
+            updateIncome();
         }
         else {
             int difference = Communications.getCurrMinerCount(rc) - Communications.getPrevMinerCount(rc);
             int archonCount = rc.getArchonCount();
             if(difference > archonCount || Communications.getCurrMinerCount(rc) > rc.getRobotCount() - archonCount) {
                 activeArchon = true;
-                Communications.updateMinerCount(rc);
+                tryActivate();
+                /*Communications.updateMinerCount(rc);
                 Communications.clearOtherArchonData(rc);
                 Communications.updateLabCount(rc);
                 Communications.updateBuilderCount(rc);
-                // updateIncome();
+                updateIncome();*/
             }
         }
     }
@@ -140,7 +141,7 @@ public strictfp class ArchonRobot extends Robot {
         int income = leadTotal - previousLead;
         previousLead = leadTotal;
 
-
+        Communications.correctIncome(rc, income);
     }
 
     private static final double PANIC_SOLDIER_WEIGHT = 1;
@@ -277,6 +278,10 @@ public strictfp class ArchonRobot extends Robot {
 
         if (rc.getTeamGoldAmount(rc.getTeam()) >= 20) {
             type = RobotType.SAGE;
+        }
+
+        if (rc.getTeamLeadAmount(rc.getTeam()) >= 1000 && Communications.getBuilderCount(rc) < 3) {
+            type = RobotType.BUILDER;
         }
 
         Direction d = null;
