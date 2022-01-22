@@ -357,7 +357,7 @@ public strictfp class SageRobot extends Robot {
 
 
     public Attack scoreReg(MapLocation loc) throws GameActionException {
-        double bestScore = 0;
+        double bestScore = -100;
         MapLocation bestLoc = null;
         MapLocation myLoc = rc.getLocation();
 
