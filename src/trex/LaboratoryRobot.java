@@ -7,6 +7,7 @@ public strictfp class LaboratoryRobot extends Robot {
     private static final int TARGET_RATE = 3;  // will only transmute if rate is this or better
     private static final int MOVE_THRESHOLD = 6;  // threshold for friendlies before lab attempts to move
     private static final int STOP_THRESHOLD = 5;
+    static final int MAX_IDLE_TURNS = 10;
 
     private MapLocation targetCorner;
 
@@ -16,7 +17,7 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
 
-
+    private int idleTurns = 0;
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
@@ -40,17 +41,37 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean nearCorner() {
-        return rc.getLocation().distanceSquaredTo(targetCorner) < 2;
+        return rc.getLocation().distanceSquaredTo(targetCorner) < 3;
+    }
+
+    public boolean nearCorner(MapLocation loc) {
+        return loc.distanceSquaredTo(targetCorner) < 2;
     }
 
     public boolean shouldBecomePortable() {
-        return (friendlies > STOP_THRESHOLD) && !nearCorner();
+        return (friendlies > STOP_THRESHOLD) && !nearCorner() && idleTurns > MAX_IDLE_TURNS;
     }
 
-    public boolean shouldBecomeTurret() {
-        return friendlies < STOP_THRESHOLD || nearCorner();
+    public boolean shouldBecomeTurret() throws GameActionException {
+        return (friendlies < STOP_THRESHOLD || nearCorner()) && bestRubbleInArea();
     }
     
+    public boolean bestRubbleInArea() throws GameActionException {
+        MapLocation best = null;
+        int bestRubble = 101;
+        int rubble = 0;
+        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 8)) {
+            rubble = rc.senseRubble(check);
+            if (rubble < bestRubble) {
+                if (!rc.canSenseRobotAtLocation(check) || rc.getLocation().equals(check)) {
+                    best = check;
+                    bestRubble = rubble;
+                }
+            }
+        }
+        return rc.senseRubble(rc.getLocation()) == bestRubble;
+    }
+
     RobotInfo[] nearbyRobots;
     int friendlies = 0;
     boolean areDangerousEnemies;
@@ -94,15 +115,52 @@ public strictfp class LaboratoryRobot extends Robot {
         int lead = rc.getTeamLeadAmount(rc.getTeam());
         if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= Math.max(TARGET_RATE, TARGET_RATE * (rc.getTeamLeadAmount(rc.getTeam()) - 750) / 150)) {
             rc.transmute();
+            idleTurns = 0;
         }
+        else if (rc.getTransmutationRate() > Math.max(TARGET_RATE, TARGET_RATE * (rc.getTeamLeadAmount(rc.getTeam()) - 750) / 150)){
+            idleTurns++;
+        }
+    }
+
+    public MapLocation findGoodLocation() throws GameActionException {
+        MapLocation best = null;
+        int bestRubble = 101;
+        int rubble = 0;
+        int bestDistance = 100;
+        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 8)) {
+            rubble = rc.senseRubble(check);
+            if (rubble < bestRubble) {
+                if (!rc.canSenseRobotAtLocation(check) || rc.getLocation().equals(check)) {
+                    best = check;
+                    bestRubble = rubble;
+                }
+            }
+            else if(rubble == bestRubble) {
+                if(check.distanceSquaredTo(targetCorner) < bestDistance) {
+                    bestDistance = check.distanceSquaredTo(targetCorner);
+                    best = check;
+                }
+            }
+        }
+        return best;
     }
 
     public boolean tryMove() throws GameActionException {
         if(rc.isMovementReady()) {
-            Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
-            if(rc.canMove(d)) {
-                rc.move(d);
-                return true;
+            if(!nearCorner() && !(friendlies < STOP_THRESHOLD)) {
+                Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
+                if(rc.canMove(d)) {
+                    rc.move(d);
+                    return true;
+                }
+            }
+            else {
+                MapLocation goodLocation = findGoodLocation();
+                Direction d = Navigation.navigate(rc, rc.getLocation(), goodLocation);
+                if(rc.canMove(d)) {
+                    rc.move(d);
+                    return true;
+                }
             }
         }
         return false;
