@@ -94,7 +94,7 @@ public strictfp class SageRobot extends Robot {
                 for(Direction di: dirs) {
                     if(rc.canMove(di)) {
                         Attack test = tryAttack(myLoc.add(di));
-                        if(after == null || test.score > after.score) {
+                        if(after == null || (test != null && test.score > after.score)) {
                             after = test;
                         }
                     }
