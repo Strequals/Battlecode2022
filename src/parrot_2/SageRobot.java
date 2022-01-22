@@ -1,4 +1,4 @@
-package trex;
+package parrot_2;
 
 import battlecode.common.*;
 
@@ -66,7 +66,7 @@ public strictfp class SageRobot extends Robot {
     }
 
     public static final int ATTACK_DANGEROUS_RUBBLE = 25;
-    public static final int HEAL_HEALTH = 46;
+    public static final int HEAL_HEALTH = 20;
     public static final int MINER_BOOST = 15; // 20% of 75 lead of a s
 
     int turnsNotAttacked = 0;
@@ -317,10 +317,10 @@ public strictfp class SageRobot extends Robot {
     int maxDamageTakenAtLoc;
     final int MINER_DESTROY_BONUS = 5;
     final int BUILDER_DESTROY_BONUS = 5;
-    final int SOLDIER_DESTROY_BONUS = 10;
-    final int SAGE_DESTROY_BONUS = 10;
-    final int WATCHTOWER_DESTROY_BONUS = 10;
-    final int LABORATORY_DESTROY_BONUS = 20;
+    final int SOLDIER_DESTROY_BONUS = 20;
+    final int SAGE_DESTROY_BONUS = 30;
+    final int WATCHTOWER_DESTROY_BONUS = 30;
+    final int LABORATORY_DESTROY_BONUS = 10;
     final int ARCHON_DESTROY_BONUS = 100;
     public Attack score(MapLocation loc) throws GameActionException {
         enemiesAtLoc = rc.senseNearbyRobots(loc, RobotType.SAGE.actionRadiusSquared, rc.getTeam().opponent());
@@ -700,7 +700,7 @@ public strictfp class SageRobot extends Robot {
     public static final int MAX_RUBBLE_INCREASE = 10;
     public static final int TURNS_AVOID_RUBBLE = 6;
 
-    public static final int FLEE_WHEN_COOLDOWN_ABOVE = 30;
+    public static final int FLEE_WHEN_COOLDOWN_ABOVE = 40;
 
     public Direction tryMove() throws GameActionException {
         findTargets();
