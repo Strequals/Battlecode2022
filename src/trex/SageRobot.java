@@ -58,7 +58,7 @@ public strictfp class SageRobot extends Robot {
     // static final int THREAT_THRESHOLD = 6;
     static final int FRIENDLY_DAMAGE_MULT = 1000;  // multiplier to penalty for damaging friendly buildings
     static final int KILL_POINTS = 20;  // additional score for killing a unit
-    static final int MIN_SCORE = 0;
+    static final int MIN_SCORE = 20;
     static final boolean DENSITY_PREDICTION = false; 
 
     public SageRobot(RobotController rc) {
@@ -332,7 +332,7 @@ public strictfp class SageRobot extends Robot {
             best = fury;
         }
         rc.setIndicatorString("best: " + best.score + "charge: " + charge.score + "fury: " + fury.score);
-        return best.score < MIN_SCORE ? null : best;
+        return best.score * (1 + rubbleAtLoc / 10) < MIN_SCORE ? null : best;
     }
 
     public int destroyBonus(RobotType type) {
@@ -357,7 +357,7 @@ public strictfp class SageRobot extends Robot {
 
 
     public Attack scoreReg(MapLocation loc) throws GameActionException {
-        double bestScore = -100;
+        double bestScore = -1;
         MapLocation bestLoc = null;
         MapLocation myLoc = rc.getLocation();
 
