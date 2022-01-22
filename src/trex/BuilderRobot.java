@@ -346,6 +346,7 @@ public strictfp class BuilderRobot extends Robot {
         Team team = rc.getTeam();
         MapLocation current = rc.getLocation();
         MapLocation best = null;
+        boolean isPrototype = false;
         int bestDist = Integer.MAX_VALUE;
         int dist;
         for (RobotInfo nearbyRobot : nearbyRobots) {
@@ -353,14 +354,22 @@ public strictfp class BuilderRobot extends Robot {
                 if (RobotType.BUILDER.canRepair(nearbyRobot.type)
                     && nearbyRobot.health < nearbyRobot.type.getMaxHealth(nearbyRobot.level)) {
                     dist = current.distanceSquaredTo(nearbyRobot.location);
-                    if (dist < bestDist) {
-                        best = nearbyRobot.location;
-                        bestDist = dist;
+                    if (nearbyRobot.mode == RobotMode.PROTOTYPE) {
+                        if (!isPrototype || dist < bestDist) {
+                            best = nearbyRobot.location;
+                            isPrototype = true;
+                            bestDist = dist;
+                        }
+                    } else {
+                        if (!isPrototype && dist < bestDist) {
+                            best = nearbyRobot.location;
+                            bestDist = dist;
+                        }
                     }
                 } else if (RobotType.BUILDER.canMutate(nearbyRobot.type)
                         && nearbyRobot.level < shouldMutateLevel) {
                     dist = current.distanceSquaredTo(nearbyRobot.location);
-                    if (dist < bestDist) {
+                    if (!isPrototype && dist < bestDist) {
                         best = nearbyRobot.location;
                         bestDist = dist;
                     }
