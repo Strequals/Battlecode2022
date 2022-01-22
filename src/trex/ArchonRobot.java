@@ -19,7 +19,7 @@ public strictfp class ArchonRobot extends Robot {
 
     private static final double WEIGHT_DECAY = 0.5;
 
-    private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 2;
+    private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 3;
 
     int soldiersProduced;
 
@@ -350,6 +350,9 @@ public strictfp class ArchonRobot extends Robot {
                 case BUILDER:
                     builderWeight *= WEIGHT_DECAY;
                     Communications.correctIncome(rc, 40);
+                    break;
+                case SAGE:
+                    soldierWeight *= WEIGHT_DECAY;
                     break;
             }
             Communications.zeroArchonPriority(rc);

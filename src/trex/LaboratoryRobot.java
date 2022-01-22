@@ -112,8 +112,15 @@ public strictfp class LaboratoryRobot extends Robot {
         friendlies = friendlyCount;
     }
 
+    public static final int WAIT_MINERS = 2;
+
     public void tryTransmute() throws GameActionException {
         int lead = rc.getTeamLeadAmount(rc.getTeam());
+        if (Communications.getPrevMinerCount(rc) < WAIT_MINERS && lead < 75 + TARGET_RATE) {
+            //let archon produce some miners
+            idleTurns++;
+            return;
+        }
         if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= Math.max(TARGET_RATE, TARGET_RATE * (rc.getTeamLeadAmount(rc.getTeam()) - 750) / 150)) {
             rc.transmute();
             idleTurns = 0;
