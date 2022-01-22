@@ -58,7 +58,7 @@ public strictfp class SageRobot extends Robot {
     // static final int THREAT_THRESHOLD = 6;
     static final int FRIENDLY_DAMAGE_MULT = 1000;  // multiplier to penalty for damaging friendly buildings
     static final int KILL_POINTS = 20;  // additional score for killing a unit
-    static final int MIN_SCORE = 20;
+    static final int MIN_SCORE = 0;
     static final boolean DENSITY_PREDICTION = false; 
 
     public SageRobot(RobotController rc) {
@@ -84,10 +84,20 @@ public strictfp class SageRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }*/
         Attack before = rc.isActionReady() ? tryAttack() : null;
+        Attack after = null;
+        MapLocation myLoc = rc.getLocation();
+        if(rc.isMovementReady() && rc.isActionReady()) {
+            for(Direction di: Direction.allDirections()) {
+                Attack test = tryAttack(myLoc);
+                if(after == null || test.score > after.score) {
+                    after = test;
+                }
+            }
+        }
         Direction moveDir = tryMove();
         if(moveDir != null) {
             if(rc.canMove(moveDir)) {
-                Attack after = rc.isActionReady() ? tryAttack(rc.getLocation().add(moveDir)) : null;
+                // Attack after = rc.isActionReady() ? tryAttack(rc.getLocation().add(moveDir)) : null;
                 if (before != null) {
                     if (after != null) {
                         if (before.score >= after.score) {
@@ -364,12 +374,12 @@ public strictfp class SageRobot extends Robot {
             }
         }
 
-        return new Attack(bestLoc, AttackType.REGULAR, bestScore);
+        return new Attack(bestLoc, AttackType.REGULAR, bestScore / (1 + rubbleAtLoc / 10));
     }
 
     public Attack scoreAbyss(MapLocation loc) {
         if(!friendlyArchonNearby && enemyMinerNearby && !isMinerNearby) {
-            return new Attack(loc, AttackType.ABYSS, leadWithinAction * 0.99 * LEAD_VALUE);
+            return new Attack(loc, AttackType.ABYSS, leadWithinAction * 0.99 * LEAD_VALUE / (1 + rubbleAtLoc / 10));
         }
         else {
             return new Attack(null, null, 0);
@@ -416,7 +426,7 @@ public strictfp class SageRobot extends Robot {
                 }
             }
         }
-        return new Attack(loc, AttackType.CHARGE, score);
+        return new Attack(loc, AttackType.CHARGE, score / (1 + rubbleAtLoc / 10));
     }
     
     final double FURY_DAMAGE_PERCENT = 0.1;
@@ -439,7 +449,7 @@ public strictfp class SageRobot extends Robot {
                 }
             }
         }
-        return new Attack(loc, AttackType.FURY, score);
+        return new Attack(loc, AttackType.FURY, score / (1 + rubbleAtLoc / 10));
     }
 
     public static final double VALUE_THRESHOLD = 0.1;
