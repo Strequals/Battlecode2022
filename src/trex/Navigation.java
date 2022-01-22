@@ -17,6 +17,9 @@ public strictfp class Navigation {
     public static Direction navigate(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
         if (bfs == null) {
             switch (rc.getType()) {
+                case BUILDER:
+                    bfs = new BFSMiner();
+                    break;
                 case MINER:
                     //bfs = new BFSMiner();
                     //break;

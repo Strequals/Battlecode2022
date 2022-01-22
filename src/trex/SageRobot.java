@@ -172,7 +172,9 @@ public strictfp class SageRobot extends Robot {
             if (otherRobot.team == team) {
                 switch (otherRobot.type) {
                     case ARCHON:
-                        friendlyArchonNearby = true;
+                        if (rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)) {
+                            friendlyArchonNearby = true;
+                        }
                         friendlyArchonPos = otherRobot.location;
                         break;
                     case SOLDIER:

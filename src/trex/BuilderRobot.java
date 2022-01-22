@@ -33,7 +33,7 @@ public strictfp class BuilderRobot extends Robot {
             repaired = repaired || tryRepair();
             mutated = mutated || tryMutate();
             built = built || tryBuild();
-            if (!repaired && !mutated && !built) {
+            if (!repaired && !mutated && !built && rc.getTeamLeadAmount(rc.getTeam()) > WATCHTOWER_THRESHOLD) {
                 locationScore *= SCORE_DECAY;
             }
         }
@@ -213,15 +213,49 @@ public strictfp class BuilderRobot extends Robot {
         return false;
     }
 
+    public MapLocation buildFrom() throws GameActionException {
+        if (!rc.canSenseLocation(targetLocation)) {
+            return targetLocation;
+        }
+
+        MapLocation best = null;
+        int bestRubble = 101;
+        MapLocation current = rc.getLocation();
+        if (!rc.canSenseRobotAtLocation(targetLocation) || targetLocation.equals(current)) {
+            best = targetLocation;
+            bestRubble = rc.senseRubble(targetLocation);
+        }
+        MapLocation loc;
+        int rubble;
+        for (Direction d : directions) {
+            loc = targetLocation.add(d);
+            if (loc.equals(current) || (rc.canSenseLocation(loc) && !rc.canSenseRobotAtLocation(loc))) {
+                rubble = rc.senseRubble(loc);
+                if (rubble < bestRubble) {
+                    bestRubble = rubble;
+                    best = loc;
+                }
+            }
+        }
+        return best;
+    }
+
     public boolean tryMove() throws GameActionException {
         if (!rc.isMovementReady()) return false;
         findTarget();
-        if(rc.getLocation().distanceSquaredTo(targetLocation) == 0) {
-            for(Direction d: directions) {
-                if(rc.canMove(d)) {
-                    rc.move(d);
-                    return true;
-                }
+
+        MapLocation buildFrom = buildFrom();
+
+        if(buildFrom != null) {
+            Direction d = null;
+            if (rc.getLocation().distanceSquaredTo(buildFrom) > 2) {
+                d = Navigation.navigate(rc, rc.getLocation(), buildFrom);
+            } else if (!rc.getLocation().equals(buildFrom)) {
+                d = rc.getLocation().directionTo(buildFrom);
+            }
+            if (d != null && rc.canMove(d)) {
+                rc.move(d);
+                return true;
             }
         } else {
             Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
@@ -249,6 +283,7 @@ public strictfp class BuilderRobot extends Robot {
             locationScore = 2;
             return;
         }
+        
 
         if (shouldBuild()) {
             MapLocation buildLocation = findBuildLocation();
@@ -258,6 +293,8 @@ public strictfp class BuilderRobot extends Robot {
                 return;
             }
         }
+
+
 
         /*MapLocation seedLocation = findSeedLocation();
         if (seedLocation != null) {
@@ -330,6 +367,14 @@ public strictfp class BuilderRobot extends Robot {
                 }
             }
         }
+
+        if (best == null) {
+            MapLocation nearestArchon = Communications.getClosestArchon(rc);
+            if (current.distanceSquaredTo(nearestArchon) > RobotType.BUILDER.visionRadiusSquared) {
+                best = nearestArchon;
+            }
+        }
+            
         return best;
     }
 

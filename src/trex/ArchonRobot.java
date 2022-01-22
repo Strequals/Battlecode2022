@@ -95,7 +95,7 @@ public strictfp class ArchonRobot extends Robot {
 
     public boolean shouldBuild() {
         boolean isWaitingForLab = Communications.getBuilderCount(rc) > 0 && Communications.getLabCount(rc) < LABS;
-        return (!isWaitingForLab || rc.getTeamGoldAmount(rc.getTeam()) < 20 || rc.getTeamLeadAmount(rc.getTeam()) >= 275) || dangerousEnemiesNearby;
+        return (!isWaitingForLab || rc.getTeamGoldAmount(rc.getTeam()) >= 20 || rc.getTeamLeadAmount(rc.getTeam()) >= 225);
     }
 
     public final int TURNS_IDLE = 20;
