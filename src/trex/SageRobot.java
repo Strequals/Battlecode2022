@@ -718,11 +718,13 @@ public strictfp class SageRobot extends Robot {
             MapLocation nearestArchon = Communications.getClosestArchon(rc);
             if (nearestArchon != null) {
                 Direction d = Navigation.navigate(rc, rc.getLocation(), nearestArchon);
-                MapLocation to = current.add(d);
-                if (d != null && rc.canMove(d) &&
-                    (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE
-                     || rc.senseRubble(to) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE)) {
-                    return d;
+                if (d != null) {
+                    MapLocation to = current.add(d);
+                    if (d != null && rc.canMove(d) &&
+                        (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE
+                         || rc.senseRubble(to) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE)) {
+                        return d;
+                    }
                 }
             }
         }
@@ -741,10 +743,12 @@ public strictfp class SageRobot extends Robot {
                 && (rc.getActionCooldownTurns() >= FLEE_WHEN_COOLDOWN_ABOVE || !isAllyInRange(fleeFrom, fleeAttackRadius) || maxDamageTaken >= rc.getHealth())) {
 
             Direction fleeDir = Navigation.flee(rc, current, fleeFrom);
-            MapLocation fleeLoc = current.add(fleeDir);
-            if (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE || rc.senseRubble(fleeLoc) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE) {
-                if (!healing || fleeLoc.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
-                    return fleeDir;
+            if (fleeDir != null) {
+                MapLocation fleeLoc = current.add(fleeDir);
+                if (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE || rc.senseRubble(fleeLoc) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE) {
+                    if (!healing || fleeLoc.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
+                        return fleeDir;
+                    }
                 }
             }
             return null;
@@ -808,12 +812,14 @@ public strictfp class SageRobot extends Robot {
         
         if (!areDangerousEnemies || current.distanceSquaredTo(targetLocation) > RobotType.SAGE.actionRadiusSquared) {
             Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
-            MapLocation to = current.add(d);
-            if (d != null && rc.canMove(d) &&
-                    (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE
-                     || rc.senseRubble(to) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE)) {
-                if (!healing || to.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
-                    return d;
+            if (d != null) {
+                MapLocation to = current.add(d);
+                if (d != null && rc.canMove(d) &&
+                        (turnsSinceSeenDangerousEnemy >= TURNS_AVOID_RUBBLE
+                         || rc.senseRubble(to) - rc.senseRubble(current) <= MAX_RUBBLE_INCREASE)) {
+                    if (!healing || to.distanceSquaredTo(friendlyArchonPos) <= RobotType.ARCHON.actionRadiusSquared) {
+                        return d;
+                    }
                 }
             }
         }
