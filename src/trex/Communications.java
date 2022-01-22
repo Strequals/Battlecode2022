@@ -333,9 +333,9 @@ public strictfp class Communications {
         archonPriority = 15;
         writeArchonPriority(rc);
     }
-    public static void writeArchonData(RobotController rc) throws GameActionException {
+    public static void writeArchonData(RobotController rc, boolean isPortable, boolean isThreatened) throws GameActionException {
         updateArray(rc);
-        int val = ((4096 + rc.getLocation().x * 64 + rc.getLocation().y));
+        int val = (((isPortable? 8192 : 0) + (isThreatened? 16384 : 0) + 4096 + rc.getLocation().x * 64 + rc.getLocation().y));
         System.out.println(val);
         int index = ARCHON_DATA_START + archonNum;
         array[index] = val;
