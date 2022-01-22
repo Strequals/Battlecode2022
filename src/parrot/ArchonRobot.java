@@ -1,4 +1,4 @@
-package trex;
+package parrot;
 
 import battlecode.common.*;
 
@@ -14,12 +14,12 @@ public strictfp class ArchonRobot extends Robot {
     private int turnsIdled;
     
     private int explorationMiners;
-    private static final int BASE_MIN_MINER = 1;
+    private static final int BASE_MIN_MINER = 2;
     private static final double MINER_RATIO = 0.002;
 
     private static final double WEIGHT_DECAY = 0.5;
 
-    private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 1;
+    private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 3;
 
     int soldiersProduced;
 
@@ -255,7 +255,7 @@ public strictfp class ArchonRobot extends Robot {
     public static final int BUILDERS = 1;
     public static final int LABS = 1;
     public void updateBuilderWeight(double totalResources) throws GameActionException {
-        if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < LABS && soldiersProduced >= PRODUCE_SOLDIERS_BEFORE_BUILDER) {
+        if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < LABS && !exploring && soldiersProduced >= PRODUCE_SOLDIERS_BEFORE_BUILDER) {
             builderWeight += BASE_BUILDER_WEIGHT;
         } else {
             builderWeight = 0;
