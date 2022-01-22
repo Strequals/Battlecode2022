@@ -49,8 +49,8 @@ public strictfp class LaboratoryRobot extends Robot {
         return loc.distanceSquaredTo(targetCorner) < 2;
     }
 
-    public boolean shouldBecomePortable() {
-        return (friendlies > STOP_THRESHOLD) && !nearCorner() && idleTurns > MAX_IDLE_TURNS;
+    public boolean shouldBecomePortable() throws GameActionException {
+        return (friendlies > STOP_THRESHOLD) && !nearCorner() && idleTurns > MAX_IDLE_TURNS || !bestRubbleInArea();
     }
 
     public boolean shouldBecomeTurret() throws GameActionException {
