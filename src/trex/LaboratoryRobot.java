@@ -92,7 +92,7 @@ public strictfp class LaboratoryRobot extends Robot {
 
     public void tryTransmute() throws GameActionException {
         int lead = rc.getTeamLeadAmount(rc.getTeam());
-        if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= TARGET_RATE) {
+        if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= Math.max(TARGET_RATE, TARGET_RATE * (rc.getTeamLeadAmount(rc.getTeam()) - 750) / 150)) {
             rc.transmute();
         }
     }

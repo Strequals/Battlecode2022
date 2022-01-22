@@ -22,6 +22,7 @@ public strictfp class SageRobot extends Robot {
         }
 
         public void execute() throws GameActionException {
+            // rc.setIndicatorString(rc.getLocation().toString() + " " + loc.toString());
             switch(type) {
                 case REGULAR: 
                     if(rc.canAttack(loc)) {
@@ -286,7 +287,7 @@ public strictfp class SageRobot extends Robot {
             }
         }
 
-        enemyDensity = totalHP == 0 ? 0 : totalHP / ((x_max - x_min) * (y_max - y_min));
+        enemyDensity = totalHP == 0 ? 0 : totalHP / ((x_max - x_min + 1) * (y_max - y_min + 1));
     }
 
     // kills * KILL_SCORE + damage + 22 * enemyDensity * revealedSquares / (rubble / 10)
@@ -378,7 +379,7 @@ public strictfp class SageRobot extends Robot {
     final double CHARGE_DAMAGE_PERCENT = 0.22;
     public Attack scoreCharge(MapLocation loc) {
         MapLocation myLoc = rc.getLocation();
-        //double score = (Math.abs(loc.x - myLoc.x) + Math.abs(loc.y - myLoc.y)) * enemyDensity;
+        //double score = (Math.abs(loc.x - myLoc.x) + Math.abs(loc.y - myLoc.y)) * enemyDensity * CHARGE_DAMAGE_PERCENT;
         double score = 0;
         double damage;
         for(RobotInfo enemy: enemiesAtLoc) {
@@ -424,7 +425,7 @@ public strictfp class SageRobot extends Robot {
         Team team = rc.getTeam();
         double damage;
         for(RobotInfo robot: nearbyRobots) {
-            if(robot.getMode() == RobotMode.TURRET) {
+            if(robot.getMode() == RobotMode.TURRET && robot.getLocation().distanceSquaredTo(loc) <= 25) {
                 damage = FURY_DAMAGE_PERCENT * robot.type.getMaxHealth(robot.level);
                 if(robot.team == team) {
                     score -= damage * FRIENDLY_DAMAGE_MULT;
