@@ -57,7 +57,6 @@ public strictfp class SageRobot extends Robot {
     static final int GIVE_UP_RADIUS_SQUARED = 2;
     // static final int THREAT_THRESHOLD = 6;
     static final int FRIENDLY_DAMAGE_MULT = 1000;  // multiplier to penalty for damaging friendly buildings
-    static final int KILL_POINTS = 20;  // additional score for killing a unit
     static final int MIN_SCORE = 20;
     static final boolean DENSITY_PREDICTION = false; 
 
@@ -109,7 +108,8 @@ public strictfp class SageRobot extends Robot {
                             rc.move(moveDir);
                         } else {
                             rc.move(moveDir);
-                            after.execute();
+                            after = tryAttack();
+                            if (after != null) after.execute();
                         }
                     } else {
                         before.execute();
@@ -118,7 +118,8 @@ public strictfp class SageRobot extends Robot {
                 } else {
                     if (after != null) {
                         rc.move(moveDir);
-                        after.execute();
+                        after = tryAttack();
+                        if (after != null) after.execute();
                     } else {
                         rc.move(moveDir);
                     }
@@ -700,7 +701,7 @@ public strictfp class SageRobot extends Robot {
     public static final int MAX_RUBBLE_INCREASE = 10;
     public static final int TURNS_AVOID_RUBBLE = 6;
 
-    public static final int FLEE_WHEN_COOLDOWN_ABOVE = 30;
+    public static final int FLEE_WHEN_COOLDOWN_ABOVE = 20;
 
     public Direction tryMove() throws GameActionException {
         findTargets();
