@@ -335,7 +335,7 @@ public strictfp class Communications {
     }
     public static void writeArchonData(RobotController rc, boolean isPortable, boolean isThreatened) throws GameActionException {
         updateArray(rc);
-        int val = (((isPortable? 8192 : 0) + (isThreatened? 16384 : 0) + 4096 + rc.getLocation().x * 64 + rc.getLocation().y));
+        int val = ((32768 + (isPortable? 8192 : 0) + (isThreatened? 16384 : 0) + 4096 + rc.getLocation().x * 64 + rc.getLocation().y));
         System.out.println(val);
         int index = ARCHON_DATA_START + archonNum;
         array[index] = val;
@@ -343,38 +343,123 @@ public strictfp class Communications {
     }
     public static void clearOtherArchonData(RobotController rc) throws GameActionException {
         updateArray(rc);
+        int v;
         switch (archonNum) {
             case 0:
-                array[ARCHON_DATA_START + 1] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
-                array[ARCHON_DATA_START + 2] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
-                array[ARCHON_DATA_START + 3] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                v = array[ARCHON_DATA_START + 1];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 1] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 1, v);
+                } else {
+                    array[ARCHON_DATA_START + 1] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
+                }
+                v = array[ARCHON_DATA_START + 2];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 2] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 2, v);
+                } else {
+                    array[ARCHON_DATA_START + 2] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
+                }
+                v = array[ARCHON_DATA_START + 3];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 3] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 3, v);
+                } else {
+                    array[ARCHON_DATA_START + 3] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                }
                 break;
             case 1:
-                array[ARCHON_DATA_START] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
-                array[ARCHON_DATA_START + 2] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
-                array[ARCHON_DATA_START + 3] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                v = array[ARCHON_DATA_START];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START, v);
+                } else {
+                    array[ARCHON_DATA_START] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START, 0);
+                }
+                v = array[ARCHON_DATA_START + 2];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 2] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 2, v);
+                } else {
+                    array[ARCHON_DATA_START + 2] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
+                }
+                v = array[ARCHON_DATA_START + 3];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 3] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 3, v);
+                } else {
+                    array[ARCHON_DATA_START + 3] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                }
                 break;
             case 2:
-                array[ARCHON_DATA_START] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
-                array[ARCHON_DATA_START + 1] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
-                array[ARCHON_DATA_START + 3] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                v = array[ARCHON_DATA_START];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START, v);
+                } else {
+                    array[ARCHON_DATA_START] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START, 0);
+                }
+                v = array[ARCHON_DATA_START + 1];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 1] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 1, v);
+                } else {
+                    array[ARCHON_DATA_START + 1] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
+                }
+                v = array[ARCHON_DATA_START + 3];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 3] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 3, v);
+                } else {
+                    array[ARCHON_DATA_START + 3] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                }
                 break;
             case 3:
-                array[ARCHON_DATA_START] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
-                array[ARCHON_DATA_START + 1] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
-                array[ARCHON_DATA_START + 2] = 0;
-                rc.writeSharedArray(ARCHON_DATA_START + 3, 0);
+                v = array[ARCHON_DATA_START];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START, v);
+                } else {
+                    array[ARCHON_DATA_START] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START, 0);
+                }
+                v = array[ARCHON_DATA_START + 1];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 1] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 1, v);
+                } else {
+                    array[ARCHON_DATA_START + 1] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 1, 0);
+                }
+                v = array[ARCHON_DATA_START + 2];
+                if (v >= 32768) {
+                    v %= 32768;
+                    array[ARCHON_DATA_START + 2] = v;
+                    rc.writeSharedArray(ARCHON_DATA_START + 2, v);
+                } else {
+                    array[ARCHON_DATA_START + 2] = 0;
+                    rc.writeSharedArray(ARCHON_DATA_START + 2, 0);
+                }
                 break;
         }
     }
@@ -461,5 +546,29 @@ public strictfp class Communications {
             numArchons++;
         }
         return new MapLocation((int) StrictMath.round(sx / numArchons), (int) StrictMath.round(sy / numArchons));
+    }
+    public static int numThreatenedArchons(RobotController rc) {
+        int numArchons = 0;
+        int val = array[ARCHON_DATA_START];
+        if (((val > 4096)) && (((val & 16384) > 0))) numArchons++;
+        val = array[ARCHON_DATA_START+1];
+        if (((val > 4096)) && (((val & 16384) > 0))) numArchons++;
+        val = array[ARCHON_DATA_START+2];
+        if (((val > 4096)) && (((val & 16384) > 0))) numArchons++;
+        val = array[ARCHON_DATA_START+3];
+        if (((val > 4096)) && (((val & 16384) > 0))) numArchons++;
+        return numArchons;
+    }
+    public static int numPortableArchons(RobotController rc) {
+        int numArchons = 0;
+        int val = array[ARCHON_DATA_START];
+        if (((val > 4096)) && (((val & 8192) > 0))) numArchons++;
+        val = array[ARCHON_DATA_START+1];
+        if (((val > 4096)) && (((val & 8192) > 0))) numArchons++;
+        val = array[ARCHON_DATA_START+2];
+        if (((val > 4096)) && (((val & 8192) > 0))) numArchons++;
+        val = array[ARCHON_DATA_START+3];
+        if (((val > 4096)) && (((val & 8192) > 0))) numArchons++;
+        return numArchons;
     }
 }

@@ -25,6 +25,8 @@ public strictfp class ArchonRobot extends Robot {
 
     MapLocation allyLocation;
 
+    boolean portable;
+
     public ArchonRobot(RobotController rc) throws GameActionException {
         super(rc);
         minerWeight = 16;
@@ -36,6 +38,7 @@ public strictfp class ArchonRobot extends Robot {
         portableTurns = 0;
         turnsIdled = 0;
         soldiersProduced = 0;
+        portable = false;
     }
 
     @Override
@@ -46,6 +49,7 @@ public strictfp class ArchonRobot extends Robot {
         tryActivate();
         switch (rc.getMode()) {
             case TURRET:
+                portable = false;
                 boolean built = shouldBuild() && tryBuild();
                 rc.setIndicatorString("shouldbuild?" + shouldBuild() + "built: " + built + "hpa: " + Communications.countHigherPriorityArchons(rc));
                 boolean repaired = tryRepair();
@@ -55,6 +59,7 @@ public strictfp class ArchonRobot extends Robot {
                     if (allyLocation != null) {
                         rc.transform();
                         Communications.zeroArchonPriority(rc);
+                        portable = true;
                         portableTurns = 0;
                     }
                 }
@@ -81,7 +86,7 @@ public strictfp class ArchonRobot extends Robot {
                 break;
         }
         Communications.writeArchonPriority(rc);
-        Communications.writeArchonData(rc);
+        Communications.writeArchonData(rc, portable, dangerousEnemiesNearby);
         //rc.setIndicatorString(Communications.archonNum + ", prty:" + Communications.archonPriority);
         /*rc.setIndicatorString(Communications.readArchonPriority(rc, 0) + " " 
                 + Communications.readArchonPriority(rc, 1) + " "
@@ -91,6 +96,7 @@ public strictfp class ArchonRobot extends Robot {
                 + rc.getTeamLeadAmount(rc.getTeam()));*/
 
         //rc.setIndicatorString("shouldBuild: " + shouldBuild() + "builders:" + Communications.getBuilderCount(rc) + "labs: " + Communications.getLabCount(rc) +  "exploring: " + exploring + "den: " + dangerousEnemiesNearby);
+        rc.setIndicatorString("portable archons: " + Communications.numPortableArchons(rc) + " port: " + portable);
     }
 
     public boolean shouldBuild() {
@@ -101,7 +107,7 @@ public strictfp class ArchonRobot extends Robot {
     public final int TURNS_IDLE = 20;
     public static final int LOW_LEAD = 25;
     public boolean shouldBecomePortable() throws GameActionException {
-        return turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1);
+        return turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1) && Communications.numPortableArchons(rc) == 0;
     }
 
     public static final int BECOME_TURRET_LEAD = 150;
@@ -504,6 +510,11 @@ public strictfp class ArchonRobot extends Robot {
                 allyLocation = allies.location;
                 return;
             }
+        }
+        MapLocation archonCOM = Communications.getArchonCOM(rc);
+        if (archonCOM.distanceSquaredTo(rc.getLocation()) > MOVE_DISTANCE_THRESHOLD) {
+            allyLocation = archonCOM;
+            return;
         }
         allyLocation = null;
     }
