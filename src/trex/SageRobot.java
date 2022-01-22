@@ -90,7 +90,7 @@ public strictfp class SageRobot extends Robot {
         MapLocation myLoc = rc.getLocation();
         Direction moveDir = tryMove();
         if(moveDir != null) {
-            Direction[] dirs = {moveDir, moveDir.rotateLeft(), moveDir.rotateLeft().rotateLeft(), moveDir.rotateRight(), moveDir.rotateRight().rotateRight()};
+            Direction[] dirs = {moveDir, moveDir.rotateLeft(), moveDir.rotateRight()};
             if(rc.isMovementReady() && rc.isActionReady()) {
                 for(Direction di: dirs) {
                     if(rc.canMove(di)) {
