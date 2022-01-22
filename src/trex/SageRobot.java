@@ -69,6 +69,8 @@ public strictfp class SageRobot extends Robot {
     public static final int HEAL_HEALTH = 20;
     public static final int MINER_BOOST = 15; // 20% of 75 lead of a s
 
+    int turnsNotAttacked = 0;
+
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
@@ -125,6 +127,12 @@ public strictfp class SageRobot extends Robot {
             if(before != null) {
                 before.execute();
             }
+        }
+
+        if (rc.isActionReady() && nearestEnemy != null) {
+            turnsNotAttacked++;
+        } else {
+            turnsNotAttacked = 0;
         }
 
         // update again after attack if movement ready
@@ -332,7 +340,7 @@ public strictfp class SageRobot extends Robot {
             best = fury;
         }
         rc.setIndicatorString("best: " + best.score + "charge: " + charge.score + "fury: " + fury.score);
-        return best.score * (1 + rubbleAtLoc / 10) < MIN_SCORE ? null : best;
+        return best.score * (1 + rubbleAtLoc / 10) < Math.max(MIN_SCORE - turnsNotAttacked, 3) ? null : best;
     }
 
     public int destroyBonus(RobotType type) {

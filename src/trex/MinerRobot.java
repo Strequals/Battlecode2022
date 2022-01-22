@@ -21,6 +21,7 @@ public strictfp class MinerRobot extends Robot {
     public void run() throws GameActionException {
         processNearbyRobots();
         updateExploration();
+        Communications.markExplore(rc, rc.getLocation());
         
         boolean mined = tryMine();
         boolean moved = false;
@@ -31,6 +32,7 @@ public strictfp class MinerRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }
         Communications.incrementMinerCount(rc);
+        rc.setIndicatorString("target: " + resourceLocation + "score : " + locationScore);
     }
     
 
@@ -40,7 +42,7 @@ public strictfp class MinerRobot extends Robot {
     boolean areEnemies;
     int enemyLevel = 0;
     MapLocation fleeFrom;
-    final int FLEE_MEMORY_TURNS = 4;
+    final int FLEE_MEMORY_TURNS = 8;
     int fleeMemory = 0;
     int MAX_FLEE_RUBBLE_INCREASE = 20;
     int enemyThreat;
@@ -238,6 +240,7 @@ public strictfp class MinerRobot extends Robot {
     }
 
     boolean fleeing = false;
+    static final double FLEE_SCORE_DECAY = 0.5;
     
     /**
      * Looks for a suitable location to mine and tries to move there.
@@ -247,8 +250,10 @@ public strictfp class MinerRobot extends Robot {
         if (!rc.isMovementReady()) return false;
 
         if (fleeMemory > 0) {
+            fleeMemory--;
             if (fleeing || resourceValueSeen < enemyThreat * (FLEE_HEALTH + rc.getHealth())) {
                 Direction fleeDir = Navigation.flee(rc, rc.getLocation(), fleeFrom);
+                locationScore *= FLEE_SCORE_DECAY;
                 if (fleeDir != null) {
                     MapLocation fleeLoc = rc.getLocation().add(fleeDir);
                     if (rc.senseRubble(fleeLoc) - rc.senseRubble(rc.getLocation()) < MAX_FLEE_RUBBLE_INCREASE) {
@@ -258,8 +263,6 @@ public strictfp class MinerRobot extends Robot {
                 }
                 fleeing = true;
             }
-            fleeMemory--;
-            locationScore *= SCORE_DECAY;
         } else {
             fleeFrom = null;
             fleeing = false;
@@ -340,6 +343,9 @@ public strictfp class MinerRobot extends Robot {
                 return;
             }
         }
+
+        rc.setIndicatorString( " fleemem " + fleeMemory + " fleeFrom " + fleeFrom); 
+
         
         if (resourceLocation == null) {
             r = Communications.readResourceData(rc);

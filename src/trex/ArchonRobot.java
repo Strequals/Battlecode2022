@@ -126,6 +126,9 @@ public strictfp class ArchonRobot extends Robot {
             Communications.updateLabCount(rc);
             Communications.updateBuilderCount(rc);
             updateIncome();
+            if (rc.getRoundNum() % 20 == 0) {
+                Communications.clearExplore(rc);
+            }
         }
         else {
             int difference = Communications.getCurrMinerCount(rc) - Communications.getPrevMinerCount(rc);

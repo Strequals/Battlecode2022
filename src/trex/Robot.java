@@ -218,90 +218,151 @@ public strictfp abstract class Robot {
         }
         exploration.explore(rc, rc.getLocation());
     }
+
+    static final double EXPLORED_PENALTY = 20;
+    static final double CHECKED_PENALTY = 10;
+    static final int TRIES = 16;
     
     static Exploration exploration;
-    public MapLocation getExploreLocation() {
+    public MapLocation getExploreLocation() throws GameActionException {
         if (exploration == null) {
             exploration = new ExplorationMiner(rc);
         }
-        int x = rng.nextInt(rc.getMapWidth());
-        int y = rng.nextInt(rc.getMapHeight());
-        if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+
+        MapLocation current = rc.getLocation();
+        int currx = current.x;
+        int curry = current.y;
+        
+        int bx = -1;
+        int by = -1;
+        double bestScore = 1000000;
+        double score;
+
+        int x;
+        int y;
+
+        for (int i = TRIES; i--> 0;) {
+            x = rng.nextInt(rc.getMapWidth());
+            y = rng.nextInt(rc.getMapHeight());
+            score = Math.sqrt((currx - x) * (currx - x) + (curry - y) * (curry - y))
+                + (exploration.hasExplored(x, y)? EXPLORED_PENALTY : 0)
+                + (Communications.checkExplore(rc, x, y)? CHECKED_PENALTY : 0);
+            if (score < bestScore) {
+                bx = x;
+                by = y;
+            }
+        }
+
+        if (bx >= 0) {
+            return new MapLocation(bx, by);
+        } else {
+            return getRandomLocation();
+        }
+
+        /*if (!exploration.hasExplored(x, y)) {
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
         x = rng.nextInt(rc.getMapWidth());
         y = rng.nextInt(rc.getMapHeight());
         if (!exploration.hasExplored(x, y)) {
-            return new MapLocation(x, y);
+            if (!Communications.checkExplore(rc, x, y)) return new MapLocation(x, y);
+            cx = x;
+            cx = y;
         }
-        x = rng.nextInt(rc.getMapWidth());
-        y = rng.nextInt(rc.getMapHeight());
-        return new MapLocation(x, y);
+        return new MapLocation(cx, cy);*/
 
     }
 

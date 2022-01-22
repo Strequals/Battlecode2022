@@ -7,6 +7,7 @@ public strictfp class Communications {
     private static final int ENEMIES_NUM = 8;
     private static final int ALLIES_START = 16;
     private static final int ALLIES_NUM = 8;
+    private static final int EXPLORE_START = 48;
     private static final int BUILDER_COUNT_INDEX = 53;
     private static final int LAB_COUNT_INDEX = 54;
     private static final int ARCHON_DATA_START = 55;
@@ -508,7 +509,8 @@ public strictfp class Communications {
         }
         return closest;
     }
-    public static int getArchonCount(RobotController rc) {
+    public static int getArchonCount(RobotController rc) throws GameActionException {
+        updateArray(rc);
         int numArchons = 0;
         if (((array[ARCHON_DATA_START] > 4096))) numArchons++;
         if (((array[ARCHON_DATA_START+1] > 4096))) numArchons++;
@@ -547,7 +549,8 @@ public strictfp class Communications {
         }
         return new MapLocation((int) StrictMath.round(sx / numArchons), (int) StrictMath.round(sy / numArchons));
     }
-    public static int numThreatenedArchons(RobotController rc) {
+    public static int numThreatenedArchons(RobotController rc) throws GameActionException {
+        updateArray(rc);
         int numArchons = 0;
         int val = array[ARCHON_DATA_START];
         if (((val > 4096)) && (((val & 16384) > 0))) numArchons++;
@@ -559,7 +562,8 @@ public strictfp class Communications {
         if (((val > 4096)) && (((val & 16384) > 0))) numArchons++;
         return numArchons;
     }
-    public static int numPortableArchons(RobotController rc) {
+    public static int numPortableArchons(RobotController rc) throws GameActionException {
+        updateArray(rc);
         int numArchons = 0;
         int val = array[ARCHON_DATA_START];
         if (((val > 4096)) && (((val & 8192) > 0))) numArchons++;
@@ -570,5 +574,42 @@ public strictfp class Communications {
         val = array[ARCHON_DATA_START+3];
         if (((val > 4096)) && (((val & 8192) > 0))) numArchons++;
         return numArchons;
+    }
+    public static void markExplore(RobotController rc, MapLocation loc) throws GameActionException {
+        updateArray(rc);
+        int i = (loc.x/8) * 8 + (loc.y/8);
+        int index = EXPLORE_START + (i / 16);
+        int flip = 1 << (i % 16);
+        int val = array[index];
+        val |= flip;
+        array[index] = val;
+        rc.writeSharedArray(index, val);
+    }
+    public static boolean checkExplore(RobotController rc, MapLocation loc) throws GameActionException {
+        updateArray(rc);
+        int i = (loc.x/8) * 8 + (loc.y/8);
+        int index = EXPLORE_START + (i / 16);
+        int flip = 1 << (i % 16);
+        int check = array[index] & flip;
+        return check > 0;
+    }
+    public static boolean checkExplore(RobotController rc, int x, int y) throws GameActionException {
+        updateArray(rc);
+        int i = (x/8) * 8 + (y/8);
+        int index = EXPLORE_START + (i / 16);
+        int flip = 1 << (i % 16);
+        int check = array[index] & flip;
+        return check > 0;
+    }
+    public static void clearExplore(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        array[EXPLORE_START] = 0;
+        rc.writeSharedArray(EXPLORE_START, 0);
+        array[EXPLORE_START + 1] = 0;
+        rc.writeSharedArray(EXPLORE_START + 1, 0);
+        array[EXPLORE_START + 2] = 0;
+        rc.writeSharedArray(EXPLORE_START + 2, 0);
+        array[EXPLORE_START + 3] = 0;
+        rc.writeSharedArray(EXPLORE_START + 3, 0);
     }
 }
