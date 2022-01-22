@@ -46,7 +46,7 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean nearCorner(MapLocation loc) {
-        return loc.distanceSquaredTo(targetCorner) < 2;
+        return loc.distanceSquaredTo(targetCorner) < 3;
     }
 
     public boolean shouldBecomePortable() throws GameActionException {
@@ -54,14 +54,14 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean shouldBecomeTurret() throws GameActionException {
-        return (friendlies < STOP_THRESHOLD || nearCorner()) && bestRubbleInArea();
+        return (friendlies <= STOP_THRESHOLD || nearCorner()) && bestRubbleInArea();
     }
     
     public boolean bestRubbleInArea() throws GameActionException {
         MapLocation best = null;
         int bestRubble = 101;
         int rubble = 0;
-        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 8)) {
+        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 3)) {
             rubble = rc.senseRubble(check);
             if (rubble < bestRubble) {
                 if (!rc.canSenseRobotAtLocation(check) || rc.getLocation().equals(check)) {
@@ -118,7 +118,7 @@ public strictfp class LaboratoryRobot extends Robot {
         int lead = rc.getTeamLeadAmount(rc.getTeam());
         if (Communications.getPrevMinerCount(rc) < WAIT_MINERS && lead < 75 + TARGET_RATE) {
             //let archon produce some miners
-            idleTurns++;
+            // idleTurns++;
             return;
         }
         if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= Math.max(TARGET_RATE, TARGET_RATE * (rc.getTeamLeadAmount(rc.getTeam()) - 750) / 150)) {
