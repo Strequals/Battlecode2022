@@ -90,9 +90,11 @@ public strictfp class SageRobot extends Robot {
         MapLocation myLoc = rc.getLocation();
         if(rc.isMovementReady() && rc.isActionReady()) {
             for(Direction di: Direction.allDirections()) {
-                Attack test = tryAttack(myLoc);
-                if(after == null || test.score > after.score) {
-                    after = test;
+                if(rc.canMove(di)) {
+                    Attack test = tryAttack(myLoc.add(di));
+                    if(after == null || test.score > after.score) {
+                        after = test;
+                    }
                 }
             }
         }
