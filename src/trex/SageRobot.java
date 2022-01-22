@@ -87,18 +87,22 @@ public strictfp class SageRobot extends Robot {
         Attack before = rc.isActionReady() ? tryAttack() : null;
         Attack after = null;
         MapLocation myLoc = rc.getLocation();
-        if(rc.isMovementReady() && rc.isActionReady()) {
-            for(Direction di: Direction.allDirections()) {
-                if(rc.canMove(di)) {
-                    Attack test = tryAttack(myLoc.add(di));
-                    if(after == null || test.score > after.score) {
-                        after = test;
-                    }
-                }
-            }
-        }
         Direction moveDir = tryMove();
         if(moveDir != null) {
+            Direction[] dirs = {moveDir, moveDir.rotateLeft(), moveDir.rotateLeft().rotateLeft(), moveDir.rotateRight(), moveDir.rotateRight().rotateRight()};
+            if(rc.isMovementReady() && rc.isActionReady()) {
+                for(Direction di: dirs) {
+                    if(rc.canMove(di)) {
+                        Attack test = tryAttack(myLoc.add(di));
+                        if(after == null || test.score > after.score) {
+                            after = test;
+                        }
+                    }
+                }
+                if(after != null) {
+                    moveDir = rc.getLocation().directionTo(after.loc);
+                }
+            }
             if(rc.canMove(moveDir)) {
                 // Attack after = rc.isActionReady() ? tryAttack(rc.getLocation().add(moveDir)) : null;
                 if (before != null) {
