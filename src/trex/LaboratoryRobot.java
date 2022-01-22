@@ -7,13 +7,14 @@ public strictfp class LaboratoryRobot extends Robot {
     private static final int TARGET_RATE = 3;  // will only transmute if rate is this or better
     private static final int MOVE_THRESHOLD = 6;  // threshold for friendlies before lab attempts to move
     private static final int STOP_THRESHOLD = 5;
-    static final int MAX_IDLE_TURNS = 10;
+    static final int MAX_IDLE_TURNS = 5;
 
     private MapLocation targetCorner;
 
     public LaboratoryRobot(RobotController rc) {
         super(rc);
         targetCorner = findTargetCorner();
+        idleTurns = MAX_IDLE_TURNS;
     }
 
 
