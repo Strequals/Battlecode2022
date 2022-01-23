@@ -22,7 +22,7 @@ public strictfp class ArchonRobot extends Robot {
     private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 1;
 
     private static double incomeAverage = 0;
-    private static final double incomeAverageFactor = 0.8;
+    private static final double incomeAverageFactor = 0.95;
 
     int soldiersProduced;
 
@@ -127,7 +127,8 @@ public strictfp class ArchonRobot extends Robot {
         return isRepairableRobot() || rc.getTeamLeadAmount(rc.getTeam()) >= HIGH_LEAD * (1 + Communications.countHigherPriorityArchons(rc)) || (portableTurns > MAX_PORTABLE_TURNS && !enemiesNearby);
     }
 
-    public static final double TARGET_LABS_INCOME_RATIO = 2;
+    public static final double TARGET_LABS_INCOME_RATIO = 3;
+    public static final double INCOME_SUB = 5;
 
     public void tryActivate() throws GameActionException {
         if(activeArchon) {
@@ -142,7 +143,7 @@ public strictfp class ArchonRobot extends Robot {
             }
 
             int labs = Communications.getTargetLabs(rc);
-            int target = (int) (incomeAverage / TARGET_LABS_INCOME_RATIO);
+            int target = (int) ((incomeAverage - INCOME_SUB) / TARGET_LABS_INCOME_RATIO);
             target = target < 1 ? 1 : target;
             if (labs < target) {
                 Communications.setTargetLabs(rc, target);
@@ -164,12 +165,11 @@ public strictfp class ArchonRobot extends Robot {
     }
 
     public void updateIncome() throws GameActionException {
-        int leadTotal = rc.getTeamLeadAmount(rc.getTeam());
+        /*int leadTotal = rc.getTeamLeadAmount(rc.getTeam());
         int income = leadTotal - previousLead;
-        previousLead = leadTotal;
+        previousLead = leadTotal;*/
 
         Communications.updateIncome(rc);
-        Communications.correctIncome(rc, income);
     }
 
     private static final double PANIC_SOLDIER_WEIGHT = 1;
@@ -359,16 +359,13 @@ public strictfp class ArchonRobot extends Robot {
             switch (type) {
                 case MINER:
                     minerWeight *= WEIGHT_DECAY;
-                    Communications.correctIncome(rc, 50);
                     break;
                 case SOLDIER:
                     soldierWeight *= WEIGHT_DECAY;
-                    Communications.correctIncome(rc, 75);
                     soldiersProduced++;
                     break;
                 case BUILDER:
                     builderWeight *= WEIGHT_DECAY;
-                    Communications.correctIncome(rc, 40);
                     break;
                 case SAGE:
                     soldierWeight *= WEIGHT_DECAY;

@@ -168,12 +168,6 @@ public strictfp class BuilderRobot extends Robot {
 
         if (best != null) {
             rc.buildRobot(type, best);
-            if (type == RobotType.LABORATORY) {
-                Communications.correctIncome(rc, 180);
-            }
-            else {
-                Communications.correctIncome(rc, 150);
-            }
             return true;
         }
 
@@ -203,9 +197,6 @@ public strictfp class BuilderRobot extends Robot {
                 && nearbyRobot.level < shouldMutateLevel) {
                 if (rc.canMutate(nearbyRobot.location)) {
                     rc.mutate(nearbyRobot.location);
-                    if(shouldMutateLevel == 2) {
-                        Communications.correctIncome(rc, 600);
-                    }
                     return true;
                 }
             }

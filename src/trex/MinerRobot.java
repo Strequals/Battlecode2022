@@ -17,11 +17,15 @@ public strictfp class MinerRobot extends Robot {
         resourceLocation = null;
     }
 
+    int leadMined;
+
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
         updateExploration();
         Communications.markExplore(rc, rc.getLocation());
+
+        leadMined = 0;
         
         boolean mined = tryMine();
         boolean moved = false;
@@ -32,6 +36,7 @@ public strictfp class MinerRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }
         Communications.incrementMinerCount(rc);
+        Communications.correctIncome(rc, leadMined);
         rc.setIndicatorString("target: " + resourceLocation + "score : " + locationScore);
     }
     
@@ -187,7 +192,7 @@ public strictfp class MinerRobot extends Robot {
                 rc.mineLead(me);
                 mined = true;
                 turnsCanMine -= maxMines;
-
+                leadMined += maxMines;
         }
         for (Direction d : directions) {
             mineLocation = me.add(d);
@@ -206,6 +211,7 @@ public strictfp class MinerRobot extends Robot {
                         rc.mineLead(mineLocation);
                         mined = true;
                         turnsCanMine -= maxMines;
+                        leadMined += maxMines;
                 }
             }
         }

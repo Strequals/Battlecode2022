@@ -233,12 +233,17 @@ public strictfp class Communications {
     }
     public static void correctIncome(RobotController rc, int mag) throws GameActionException {
         updateArray(rc);
-        rc.writeSharedArray(INCOME_INDEX, array[INCOME_INDEX] + mag);
+        int v = array[INCOME_INDEX] + mag;
+        array[INCOME_INDEX] = v;
+        rc.writeSharedArray(INCOME_INDEX, v);
     }
     public static void updateIncome(RobotController rc) throws GameActionException {
         updateArray(rc);
-        rc.writeSharedArray(PREV_INCOME_INDEX, array[INCOME_INDEX]);
-        rc.writeSharedArray(INCOME_INDEX, 0);
+        int v = array[INCOME_INDEX];
+        array[PREV_INCOME_INDEX] = v;
+        rc.writeSharedArray(PREV_INCOME_INDEX, v);
+        array[INCOME_INDEX] = 2;
+        rc.writeSharedArray(INCOME_INDEX, 2);
     }
     public static int getPrevMinerCount(RobotController rc) {
         return array[MINER_COUNT_PREV];
