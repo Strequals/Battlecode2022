@@ -5,8 +5,6 @@ import battlecode.common.*;
 public strictfp class LaboratoryRobot extends Robot {
     private static final double MIN_LEAD = 0;
     private static final int TARGET_RATE = 3;  // will only transmute if rate is this or better
-    private static final int MOVE_THRESHOLD = 6;  // threshold for friendlies before lab attempts to move
-    private static final int STOP_THRESHOLD = 5;
     static final int MAX_IDLE_TURNS = 5;
     static final int MAX_MOVING_TURNS = 20;
 
@@ -54,11 +52,11 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean shouldBecomePortable() throws GameActionException {
-        return (friendlies > STOP_THRESHOLD) && !nearCorner() && idleTurns > MAX_IDLE_TURNS || !bestRubbleInArea();
+        return ((rc.getTransmutationRate() > TARGET_RATE) && idleTurns > MAX_IDLE_TURNS) || !bestRubbleInArea() || fleeFrom != null;
     }
 
     public boolean shouldBecomeTurret() throws GameActionException {
-        return (friendlies <= STOP_THRESHOLD || nearCorner()) && bestRubbleInArea();
+        return (rc.getTransmutationRate() <= TARGET_RATE || nearCorner()) && bestRubbleInArea();
     }
     
     public boolean bestRubbleInArea() throws GameActionException {
@@ -187,7 +185,7 @@ public strictfp class LaboratoryRobot extends Robot {
                     return true;
                 }
             }
-            else if(!nearCorner() && !(friendlies < STOP_THRESHOLD)) {
+            else if(!nearCorner() && !(rc.getTransmutationRate() <= TARGET_RATE)) {
                 Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
                 if(rc.canMove(d)) {
                     rc.move(d);
