@@ -227,13 +227,16 @@ public strictfp class Communications {
     public static double readTotalEnemies(RobotController rc) throws GameActionException {
         return readTotal(rc, ENEMIES_START, ENEMIES_NUM, ENEMIES_DECAY_FACTOR);
     }
-    public static int getIncome(RobotController rc) {
+    public static int getIncome(RobotController rc) throws GameActionException {
+        updateArray(rc);
         return array[PREV_INCOME_INDEX];
     }
     public static void correctIncome(RobotController rc, int mag) throws GameActionException {
+        updateArray(rc);
         rc.writeSharedArray(INCOME_INDEX, array[INCOME_INDEX] + mag);
     }
     public static void updateIncome(RobotController rc) throws GameActionException {
+        updateArray(rc);
         rc.writeSharedArray(PREV_INCOME_INDEX, array[INCOME_INDEX]);
         rc.writeSharedArray(INCOME_INDEX, 0);
     }

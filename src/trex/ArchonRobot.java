@@ -103,7 +103,7 @@ public strictfp class ArchonRobot extends Robot {
         rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income: " + Communications.getIncome(rc));
     }
 
-    public void updateIncomeAverage() {
+    public void updateIncomeAverage() throws GameActionException {
         incomeAverage = incomeAverageFactor * incomeAverage + (1 - incomeAverageFactor) * Communications.getIncome(rc);
     }
 

@@ -180,14 +180,14 @@ public strictfp class LaboratoryRobot extends Robot {
         if(rc.isMovementReady()) {
             if(fleeFrom != null) {
                 Direction d = Navigation.flee(rc, rc.getLocation(), fleeFrom);
-                if(rc.canMove(d)) {
+                if(d != null && rc.canMove(d)) {
                     rc.move(d);
                     return true;
                 }
             }
             else if(!nearCorner() && !(rc.getTransmutationRate() <= TARGET_RATE)) {
                 Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
-                if(rc.canMove(d)) {
+                if(d != null && rc.canMove(d)) {
                     rc.move(d);
                     return true;
                 }
@@ -195,7 +195,7 @@ public strictfp class LaboratoryRobot extends Robot {
             else {
                 MapLocation goodLocation = findGoodLocation();
                 Direction d = Navigation.navigate(rc, rc.getLocation(), goodLocation);
-                if(rc.canMove(d)) {
+                if(d != null && rc.canMove(d)) {
                     rc.move(d);
                     return true;
                 }
