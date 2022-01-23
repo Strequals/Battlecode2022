@@ -23,12 +23,20 @@ public strictfp class ArchonRobot extends Robot {
 
     private static double incomeAverage = 0;
     private static final double incomeAverageFactor = 0.95;
+    private static boolean minerProducedBeforeLab = false;
 
     int soldiersProduced;
 
     MapLocation allyLocation;
 
     boolean portable;
+
+    enum ThreatResponse {
+        RUN,
+        FIGHT
+    }
+
+    static ThreatResponse response = null;
 
     public ArchonRobot(RobotController rc) throws GameActionException {
         super(rc);
@@ -53,8 +61,7 @@ public strictfp class ArchonRobot extends Robot {
         switch (rc.getMode()) {
             case TURRET:
                 portable = false;
-                boolean built = shouldBuild() && tryBuild();
-                rc.setIndicatorString("shouldbuild?" + shouldBuild() + "built: " + built + "hpa: " + Communications.countHigherPriorityArchons(rc));
+                boolean built = tryBuild();
                 boolean repaired = tryRepair();
                 
                 if (shouldBecomePortable() && rc.canTransform()) {
@@ -89,7 +96,7 @@ public strictfp class ArchonRobot extends Robot {
                 break;
         }
         Communications.writeArchonPriority(rc);
-        Communications.writeArchonData(rc, portable, dangerousEnemiesNearby);
+        Communications.writeArchonData(rc, portable, response == ThreatResponse.FIGHT);
         //rc.setIndicatorString(Communications.archonNum + ", prty:" + Communications.archonPriority);
         /*rc.setIndicatorString(Communications.readArchonPriority(rc, 0) + " " 
                 + Communications.readArchonPriority(rc, 1) + " "
@@ -100,22 +107,33 @@ public strictfp class ArchonRobot extends Robot {
 
         //rc.setIndicatorString("shouldBuild: " + shouldBuild() + "builders:" + Communications.getBuilderCount(rc) + "labs: " + Communications.getLabCount(rc) +  "exploring: " + exploring + "den: " + dangerousEnemiesNearby);
         //rc.setIndicatorString("portable archons: " + Communications.numPortableArchons(rc) + " port: " + portable);
-        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income: " + Communications.getIncome(rc));
+        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income: " + Communications.getIncome(rc) + " threat: " + response + " bilo: " + buildIfLeadOver);
     }
 
     public void updateIncomeAverage() throws GameActionException {
         incomeAverage = incomeAverageFactor * incomeAverage + (1 - incomeAverageFactor) * Communications.getIncome(rc);
     }
-
-    public boolean shouldBuild() throws GameActionException {
+    
+    int buildIfLeadOver;
+    public static int DEFEND_LEAD = 225;
+    public static int MIN_TURN_SAVE_LEAD_FOR_DEFENSE = 10;
+    public void calculateShouldBuildLead() throws GameActionException {
+        buildIfLeadOver = 0;
         boolean isWaitingForLab = Communications.getBuilderCount(rc) > 0 && Communications.getLabCount(rc) < Communications.getTargetLabs(rc);
-        return (!isWaitingForLab || rc.getTeamGoldAmount(rc.getTeam()) >= 20 || rc.getTeamLeadAmount(rc.getTeam()) >= 225);
+        buildIfLeadOver += isWaitingForLab ? 180 : 0;
+        boolean isOtherArchonThreatened = Communications.numThreatenedArchons(rc) > 0;
+        if (response != ThreatResponse.FIGHT && isOtherArchonThreatened && rc.getRoundNum() > MIN_TURN_SAVE_LEAD_FOR_DEFENSE) {
+            buildIfLeadOver += DEFEND_LEAD;
+        }
+        if (response != ThreatResponse.FIGHT) {
+            buildIfLeadOver += Communications.countHigherPriorityArchons(rc) * 75;
+        }
     }
 
     public final int TURNS_IDLE = 20;
     public static final int LOW_LEAD = 25;
     public boolean shouldBecomePortable() throws GameActionException {
-        return turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1) && Communications.numPortableArchons(rc) == 0;
+        return response == ThreatResponse.RUN || (turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1) && Communications.numPortableArchons(rc) == 0);
     }
 
     public static final int BECOME_TURRET_LEAD = 150;
@@ -124,7 +142,7 @@ public strictfp class ArchonRobot extends Robot {
     int portableTurns;
 
     public boolean shouldBecomeTurret() throws GameActionException {
-        return isRepairableRobot() || rc.getTeamLeadAmount(rc.getTeam()) >= HIGH_LEAD * (1 + Communications.countHigherPriorityArchons(rc)) || (portableTurns > MAX_PORTABLE_TURNS && !enemiesNearby);
+        return response == ThreatResponse.FIGHT || isRepairableRobot() || rc.getTeamLeadAmount(rc.getTeam()) >= HIGH_LEAD * (1 + Communications.countHigherPriorityArchons(rc)) || (portableTurns > MAX_PORTABLE_TURNS && !enemiesNearby);
     }
 
     public static final double TARGET_LABS_INCOME_RATIO = 3;
@@ -136,6 +154,7 @@ public strictfp class ArchonRobot extends Robot {
             Communications.clearOtherArchonData(rc);
             Communications.updateLabCount(rc);
             Communications.updateBuilderCount(rc);
+            Communications.writeArchonActivate(rc);
             updateIncome();
             updateIncomeAverage();
             if (rc.getRoundNum() % 20 == 0) {
@@ -145,14 +164,15 @@ public strictfp class ArchonRobot extends Robot {
             int labs = Communications.getTargetLabs(rc);
             int target = (int) ((incomeAverage - INCOME_SUB) / TARGET_LABS_INCOME_RATIO);
             target = target < 1 ? 1 : target;
-            if (labs < target) {
+            if (labs < target && minerProducedBeforeLab) {
+                Communications.incrementTargetLabs(rc);
+                minerProducedBeforeLab = false;
+            } else if (labs > target) {
                 Communications.setTargetLabs(rc, target);
             }
         }
         else {
-            int difference = Communications.getCurrMinerCount(rc) - Communications.getPrevMinerCount(rc);
-            int archonCount = rc.getArchonCount();
-            if(difference > archonCount || Communications.getCurrMinerCount(rc) > rc.getRobotCount() - archonCount) {
+            if(Communications.shouldActivate(rc)) {
                 activeArchon = true;
                 tryActivate();
                 /*Communications.updateMinerCount(rc);
@@ -161,6 +181,8 @@ public strictfp class ArchonRobot extends Robot {
                 Communications.updateBuilderCount(rc);
                 updateIncome();*/
             }
+
+            updateIncomeAverage();
         }
     }
 
@@ -178,6 +200,13 @@ public strictfp class ArchonRobot extends Robot {
     MapLocation nearestEnemy;
     boolean enemiesNearby;
     boolean dangerousEnemiesNearby;
+    int danger;
+    int allies;
+    static final int SOLDIER_DANGER = 3;
+    static final int SAGE_DANGER = 6;
+    static final int WATCHTOWER_DANGER = 6;
+    static final int ARCHON_DANGER = 6;
+    static int threatenedTurns = 0;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         enemiesNearby = false;
@@ -185,9 +214,16 @@ public strictfp class ArchonRobot extends Robot {
         nearestEnemy = null;
         int enemyDist = Integer.MAX_VALUE;
         int dist;
+        allies = 0;
+        danger = 0;
         for (RobotInfo nearbyRobot : nearbyRobots) {
             if (nearbyRobot.team == rc.getTeam()) {
-
+                switch (nearbyRobot.type) {
+                    case SOLDIER:
+                    case SAGE:
+                    case WATCHTOWER:
+                        allies++;
+                }
             } else {
                 enemiesNearby = true;
                 if (nearbyRobot.type.canAttack()) {
@@ -199,10 +235,20 @@ public strictfp class ArchonRobot extends Robot {
                 }
                 switch (nearbyRobot.type) {
                     case SOLDIER:
-                    case SAGE:
-                    case WATCHTOWER:
-                    case ARCHON:
+                        danger += SOLDIER_DANGER;
                         dangerousEnemiesNearby = true;
+                        break;
+                    case SAGE:
+                        danger += SAGE_DANGER;
+                        dangerousEnemiesNearby = true;
+                        break;
+                    case WATCHTOWER:
+                        danger += WATCHTOWER_DANGER;
+                        dangerousEnemiesNearby = true;
+                        break;
+                    case ARCHON:
+                        danger += ARCHON_DANGER;
+                        break;
                 }
             }
         }
@@ -210,13 +256,33 @@ public strictfp class ArchonRobot extends Robot {
         if (enemiesNearby) {
             soldierWeight += PANIC_SOLDIER_WEIGHT;
         }
-    }
 
-    private static final double RESOURCE_WEIGHT = 0.0001;
-    private static final double BASE_MINER_WEIGHT = 0.4;
-    private static final double MAX_RESOURCE_BONUS = 0.8;
-    private static final double NOT_ENOUGH_MINERS_BONUS = 0.6;
-    private static final double MAKE_SOLDIERS_THRESHOLD = 2;
+        if (dangerousEnemiesNearby) {
+            if (response == null) {
+                if (((incomeAverage * rc.getHealth()) / 75 > danger * danger
+                            && Communications.numThreatenedArchons(rc) == 0)
+                        || Communications.getArchonCount(rc) <= Communications.numPortableArchons(rc) + (portable? 0 : 1)) {
+                    response = ThreatResponse.FIGHT;
+                } else {
+                    response = ThreatResponse.RUN;
+                }
+            } else {
+                switch (response) {
+                    case RUN:
+                        if (Communications.numPortableArchons(rc) == Communications.getArchonCount(rc)) {
+                            response = ThreatResponse.FIGHT;
+                        }
+                        break;
+                    case FIGHT:
+                        break;
+                }
+            }
+            threatenedTurns++;
+        } else {
+            response = null;
+            threatenedTurns = 0;
+        }
+    }
 
     public void updateWeights() throws GameActionException {
         double totalResources = Communications.readTotalResources(rc);
@@ -227,7 +293,6 @@ public strictfp class ArchonRobot extends Robot {
         if (exploring && Communications.getCurrMinerCount(rc) < explorationMiners) {
             if (!enemiesNearby) {
                 Resource r = Communications.readEnemiesData(rc);
-                rc.setIndicatorString("" + r.value);
                 if (r.value < MAKE_SOLDIERS_THRESHOLD) {
                     if (soldierWeight > minerWeight) {
                         soldierWeight = minerWeight - 0.000001;
@@ -246,6 +311,12 @@ public strictfp class ArchonRobot extends Robot {
         //rc.setIndicatorString("m: " + minerWeight + ", s: " + soldierWeight + ", b: " + builderWeight);
     }
 
+    private static final double RESOURCE_WEIGHT = 0.0001;
+    private static final double BASE_MINER_WEIGHT = 0.4;
+    private static final double MAX_RESOURCE_BONUS = 0.8;
+    private static final double NOT_ENOUGH_MINERS_BONUS = 0.6;
+    private static final double MAKE_SOLDIERS_THRESHOLD = 2;
+
     public void updateMinerWeight(double totalResources) throws GameActionException {
         double bonus = RESOURCE_WEIGHT * totalResources;
         if (bonus > MAX_RESOURCE_BONUS) {
@@ -258,8 +329,8 @@ public strictfp class ArchonRobot extends Robot {
     }
 
     private static final double ENEMY_WEIGHT = 0.1;
-    private static final double BASE_SOLDIER_WEIGHT = 3;
-    private static final double MAX_ENEMIES_BONUS = 2;
+    private static final double BASE_SOLDIER_WEIGHT = 1;
+    private static final double MAX_ENEMIES_BONUS = 1;
 
     public void updateSoldierWeight(double totalEnemies) throws GameActionException {
         double bonus = ENEMY_WEIGHT * totalEnemies;
@@ -274,7 +345,8 @@ public strictfp class ArchonRobot extends Robot {
     public static final int BUILDERS = 1;
     public static final int LABS = 1;
     public void updateBuilderWeight(double totalResources) throws GameActionException {
-        if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < LABS && soldiersProduced >= PRODUCE_SOLDIERS_BEFORE_BUILDER) {
+        if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < Communications.getTargetLabs(rc) && soldiersProduced >= PRODUCE_SOLDIERS_BEFORE_BUILDER) {
+            if (!dangerousEnemiesNearby || Communications.getArchonCount(rc) <= Communications.numPortableOrThreatenedArchons(rc))
             builderWeight += BASE_BUILDER_WEIGHT;
         } else {
             builderWeight = 0;
@@ -282,13 +354,9 @@ public strictfp class ArchonRobot extends Robot {
     }
     
     public static final int MOST_EXPENSIVE_UNIT_PRICE_LEAD = 75;
+    static final int MAX_HOLD_TURNS = 25;
     public boolean tryBuild() throws GameActionException {
-        int hpa = Communications.countHigherPriorityArchons(rc);
-        if (hpa > 0 && (1 + Communications.countHigherPriorityArchons(rc)) * MOST_EXPENSIVE_UNIT_PRICE_LEAD
-                > rc.getTeamLeadAmount(rc.getTeam())) {
-            Communications.incrementArchonPriority(rc);
-            return false;
-        }
+        calculateShouldBuildLead();
 
         RobotType type = RobotType.MINER;
         double weight = minerWeight;
@@ -310,6 +378,19 @@ public strictfp class ArchonRobot extends Robot {
 
         if (rc.getTeamLeadAmount(rc.getTeam()) >= 1000 && Communications.getBuilderCount(rc) < 3) {
             type = RobotType.BUILDER;
+        }
+
+        if (rc.getTeamLeadAmount(rc.getTeam()) - type.buildCostLead < buildIfLeadOver
+                || (type == RobotType.SAGE && response != ThreatResponse.FIGHT && Communications.numThreatenedArchons(rc) > 0)) {
+            Communications.incrementArchonPriority(rc);
+            return false;
+        }
+
+        if (response == ThreatResponse.FIGHT) {
+            if (allies == 0 && rc.getTeamLeadAmount(rc.getTeam()) < DEFEND_LEAD && threatenedTurns < MAX_HOLD_TURNS && rc.getHealth() > 10) {
+                Communications.incrementArchonPriority(rc);
+                return false;
+            }
         }
 
         Direction d = null;
@@ -353,12 +434,11 @@ public strictfp class ArchonRobot extends Robot {
                 break;
         }
 
-        rc.setIndicatorString("tried building " + type + " in direction " + d);
-
         if (tryBuild(type, d)) {
             switch (type) {
                 case MINER:
                     minerWeight *= WEIGHT_DECAY;
+                    minerProducedBeforeLab = true;
                     break;
                 case SOLDIER:
                     soldierWeight *= WEIGHT_DECAY;
@@ -373,6 +453,18 @@ public strictfp class ArchonRobot extends Robot {
             }
             Communications.zeroArchonPriority(rc);
             return true;
+        }
+
+        switch (type) {
+            case MINER:
+                minerWeight /= WEIGHT_DECAY;
+                break;
+            case SOLDIER:
+                soldierWeight /= WEIGHT_DECAY;
+                break;
+            case BUILDER:
+                builderWeight /= WEIGHT_DECAY;
+                break;
         }
         if (enemiesNearby && type == RobotType.SOLDIER) {
             Communications.maxArchonPriority(rc);
@@ -542,6 +634,16 @@ public strictfp class ArchonRobot extends Robot {
     }
 
     public boolean tryMove() throws GameActionException {
+        if (response == ThreatResponse.RUN) {
+            MapLocation nearestArchon = Communications.getClosestArchon(rc);
+            if (nearestArchon != null) {
+                Direction d = Navigation.navigate(rc, rc.getLocation(), allyLocation);
+                if (d != null && rc.canMove(d)) {
+                    rc.move(d);
+                    return true;
+                }
+            }
+        }
         if (allyLocation != null) {
             Direction d = Navigation.navigate(rc, rc.getLocation(), allyLocation);
             if (d != null && rc.canMove(d)) {

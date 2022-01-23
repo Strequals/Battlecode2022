@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 public strictfp class LaboratoryRobot extends Robot {
     private static final double MIN_LEAD = 0;
-    private static int TARGET_RATE = 2;  // will only transmute if rate is this or better
+    private static int TARGET_RATE = 3;  // will only transmute if rate is this or better
     static final int MAX_IDLE_TURNS = 5;
     static final int MAX_MOVING_TURNS = 20;
 
@@ -46,7 +46,7 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean nearCorner() {
-        return rc.getLocation().distanceSquaredTo(targetCorner) < 8;
+        return rc.getLocation().distanceSquaredTo(targetCorner) < 20;
     }
 
     public boolean nearCorner(MapLocation loc) {
@@ -61,23 +61,29 @@ public strictfp class LaboratoryRobot extends Robot {
         return (rc.getTransmutationRate() <= TARGET_RATE) && bestRubbleInArea() && fleeFrom == null;
     }
 
-    public static final int RUBBLE_THRESHOLD = 10;
-    
+    MapLocation bestRubbleLoc;
     public boolean bestRubbleInArea() throws GameActionException {
         MapLocation best = null;
-        int bestRubble = 101;
+        int bestRubble = 11;
         int rubble = 0;
-        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 3)) {
-            rubble = rc.senseRubble(check);
-            if (rubble < bestRubble) {
-                if (!rc.canSenseRobotAtLocation(check) || rc.getLocation().equals(check)) {
+        int bestdsq = Integer.MAX_VALUE;
+        int dsq = 0;
+        MapLocation current = rc.getLocation();
+        for (MapLocation check : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 5)) {
+            rubble = rc.senseRubble(check) / 10;
+            dsq = check.distanceSquaredTo(current);
+            if (rubble < bestRubble || (rubble == bestRubble && dsq < bestdsq)) {
+                if (!rc.canSenseRobotAtLocation(check) || current.equals(check)) {
                     best = check;
                     bestRubble = rubble;
+                    bestdsq = dsq;
                 }
             }
         }
-        return rc.senseRubble(rc.getLocation()) <= bestRubble + RUBBLE_THRESHOLD;
+        bestRubbleLoc = best;
+        return rc.senseRubble(rc.getLocation()) / 10 <= bestRubble;
     }
+
 
     RobotInfo[] nearbyRobots;
     int friendlies = 0;
@@ -211,20 +217,28 @@ public strictfp class LaboratoryRobot extends Robot {
                     return true;
                 }
             }
-            if (!nearCorner()) {
-                Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
-                if(d != null && rc.canMove(d)) {
+            if (!bestRubbleInArea()) {
+                Direction d = Navigation.navigate(rc, rc.getLocation(), bestRubbleLoc);
+                if (d != null && rc.canMove(d)) {
                     rc.move(d);
                     return true;
                 }
             }
             if (nearestAlly != null) {
+                if (!nearCorner()) {
+                    Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
+                    if(d != null && rc.canMove(d)) {
+                        rc.move(d);
+                        return true;
+                    }
+                }
                 Direction d = Navigation.flee(rc, rc.getLocation(), nearestAlly);
                 if (d != null && rc.canMove(d)) {
                     rc.move(d);
                     return true;
                 }
             }
+            
 
             MapLocation goodLocation = findGoodLocation();
             Direction d = Navigation.navigate(rc, rc.getLocation(), goodLocation);

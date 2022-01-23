@@ -848,8 +848,8 @@ public strictfp abstract class Robot {
         int width = rc.getMapWidth();
         MapLocation myLoc = rc.getLocation();
 
-        int x = myLoc.x > (width / 2) ? width : 0;
-        int y = myLoc.y > (height / 2) ? height : 0;
+        int x = myLoc.x > (width / 2) ? width - 1 : 0;
+        int y = myLoc.y > (height / 2) ? height - 1 : 0;
         return new MapLocation(x, y);
     }
 

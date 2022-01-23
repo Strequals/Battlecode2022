@@ -16,11 +16,14 @@ public strictfp class BuilderRobot extends Robot {
     private static final int TOWER_COOLDOWN = 4;  // turns before building tower - 1
     private static final int TOWER_THRESHOLD = 20;
 
+    private static final int FORCE_BUILD_TURNS = 20;
+
     public BuilderRobot(RobotController rc) {
         super(rc);
     }
 
     private int towerCooldown = 0;
+    int turnsNotBuilt = 0;
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
@@ -36,7 +39,13 @@ public strictfp class BuilderRobot extends Robot {
             if (!repaired && !mutated && !built && rc.getTeamLeadAmount(rc.getTeam()) > WATCHTOWER_THRESHOLD) {
                 locationScore *= SCORE_DECAY;
             }
+            if (built) {
+                turnsNotBuilt = 0;
+            } else {
+                turnsNotBuilt++;
+            }
         }
+        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + " labs: " + Communications.getLabCount(rc));
     }
     
     RobotInfo[] nearbyRobots;
@@ -152,22 +161,22 @@ public strictfp class BuilderRobot extends Robot {
 
     public boolean shouldBuild() {
         //TODO: do not build if an archon is under attack
-        return !spottedByEnemy;
+        return !spottedByEnemy || turnsNotBuilt > FORCE_BUILD_TURNS;
     }
 
     public static final int MAX_ALLIES_BUILD_LAB = 1;
 
     public boolean tryBuild(RobotType type) throws GameActionException {
         if (!rc.isActionReady()) return false;
+        MapLocation current = rc.getLocation();
 
         if (type == RobotType.LABORATORY) {
-            if (spottedByEnemy ||
-                    nearbyAllies > MAX_ALLIES_BUILD_LAB) {
+            if ((spottedByEnemy ||
+                    nearbyAllies > MAX_ALLIES_BUILD_LAB) && turnsNotBuilt < FORCE_BUILD_TURNS) {
                 return false;
             }
         }
         
-        MapLocation current = rc.getLocation();
         MapLocation loc;
         Direction best = null;
         int rubble = 101;
@@ -289,6 +298,7 @@ public strictfp class BuilderRobot extends Robot {
     }
 
     boolean isBuildLocation;
+    final int CLOSE_ENOUGH_TO_CORNER = 20;
 
     public void findTarget() throws GameActionException {
         isBuildLocation = false;
@@ -310,10 +320,14 @@ public strictfp class BuilderRobot extends Robot {
 
         if (shouldBuild()) {
             isBuildLocation = true;
-            if (shouldBuildLab() && nearbyAllies > MAX_ALLIES_BUILD_LAB) {
+            if (shouldBuildLab() && (nearbyAllies > MAX_ALLIES_BUILD_LAB || turnsNotBuilt > FORCE_BUILD_TURNS)) {
                 targetLocation = findTargetCorner();
-                if (targetLocation.distanceSquaredTo(rc.getLocation()) <= RobotType.BUILDER.actionRadiusSquared) {
-                    targetLocation = getRandomLocation();
+                if (targetLocation.distanceSquaredTo(rc.getLocation()) <= CLOSE_ENOUGH_TO_CORNER) {
+                    targetLocation = findBuildLocation();
+                }
+                if (targetLocation != null) {
+                    locationScore = 1;
+                    return;
                 }
             } else {
                 MapLocation buildLocation = findBuildLocation();

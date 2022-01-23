@@ -6,7 +6,8 @@ public strictfp class Communications {
     private static final int ENEMIES_START = 8;
     private static final int ENEMIES_NUM = 8;
     private static final int ALLIES_START = 16;
-    private static final int ALLIES_NUM = 8;
+    private static final int ALLIES_NUM = 7;
+    private static final int ARCHON_ACTIVATE_INDEX = 47;
     private static final int EXPLORE_START = 48;
     private static final int LAB_TARGET_INDEX = 52;
     private static final int BUILDER_COUNT_INDEX = 53;
@@ -245,36 +246,59 @@ public strictfp class Communications {
         array[INCOME_INDEX] = 2;
         rc.writeSharedArray(INCOME_INDEX, 2);
     }
-    public static int getPrevMinerCount(RobotController rc) {
+    public static int getPrevMinerCount(RobotController rc) throws GameActionException {
+        updateArray(rc);
         return array[MINER_COUNT_PREV];
     }
-    public static int getCurrMinerCount(RobotController rc) {
+    public static int getCurrMinerCount(RobotController rc) throws GameActionException {
+        updateArray(rc);
         return array[MINER_COUNT_INDEX];
     }
     public static void incrementMinerCount(RobotController rc) throws GameActionException {
-        rc.writeSharedArray(MINER_COUNT_INDEX, array[MINER_COUNT_INDEX] + 1);
+        updateArray(rc);
+        int v = array[MINER_COUNT_INDEX] + 1;
+        array[MINER_COUNT_INDEX] = v;
+        rc.writeSharedArray(MINER_COUNT_INDEX, v);
     }
     public static void updateMinerCount(RobotController rc) throws GameActionException {
-        rc.writeSharedArray(MINER_COUNT_PREV, array[MINER_COUNT_INDEX]);
+        updateArray(rc);
+        int v = array[MINER_COUNT_INDEX];
+        array[MINER_COUNT_PREV] = v;
+        rc.writeSharedArray(MINER_COUNT_PREV, v);
+        array[MINER_COUNT_INDEX] = 0;
         rc.writeSharedArray(MINER_COUNT_INDEX, 0);
     }
-    public static int getLabCount(RobotController rc) {
-        return array[LAB_COUNT_INDEX] >> 6;
+    public static int getLabCount(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        return (array[LAB_COUNT_INDEX] >> 6);
     }
     public static void updateLabCount(RobotController rc) throws GameActionException {
-        rc.writeSharedArray(LAB_COUNT_INDEX, array[LAB_COUNT_INDEX] % 64 * 64);
+        updateArray(rc);
+        int v = array[LAB_COUNT_INDEX] % 64 * 64;
+        array[LAB_COUNT_INDEX] = v;
+        rc.writeSharedArray(LAB_COUNT_INDEX, v);
     }
     public static void incrementLabCount(RobotController rc) throws GameActionException {
-        rc.writeSharedArray(LAB_COUNT_INDEX, array[LAB_COUNT_INDEX] + 1);
+        updateArray(rc);
+        int v = array[LAB_COUNT_INDEX] + 1;
+        array[LAB_COUNT_INDEX] = v;
+        rc.writeSharedArray(LAB_COUNT_INDEX, v);
     }
-    public static int getBuilderCount(RobotController rc) {
+    public static int getBuilderCount(RobotController rc) throws GameActionException {
+        updateArray(rc);
         return array[BUILDER_COUNT_INDEX] >> 7;
     }
     public static void updateBuilderCount(RobotController rc) throws GameActionException {
-        rc.writeSharedArray(BUILDER_COUNT_INDEX, array[BUILDER_COUNT_INDEX] % 128 * 128);
+        updateArray(rc);
+        int v = array[BUILDER_COUNT_INDEX] % 128 * 128;
+        array[BUILDER_COUNT_INDEX] = v;
+        rc.writeSharedArray(BUILDER_COUNT_INDEX, v);
     }
     public static void incrementBuilderCount(RobotController rc) throws GameActionException {
-        rc.writeSharedArray(BUILDER_COUNT_INDEX, array[BUILDER_COUNT_INDEX] + 1);
+        updateArray(rc);
+        int v = array[BUILDER_COUNT_INDEX] + 1;
+        array[BUILDER_COUNT_INDEX] = v;
+        rc.writeSharedArray(BUILDER_COUNT_INDEX, v);
     }
     public static void writeArchonPriority(RobotController rc) throws GameActionException {
         updateArray(rc);
@@ -484,7 +508,7 @@ public strictfp class Communications {
         if (((val > 4096))) {
             archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
             d = current.distanceSquaredTo(archonLoc);
-            if (d < dist) {
+            if (d < dist && !archonLoc.equals(current)) {
                 closest = archonLoc;
                 dist = d;
             }
@@ -493,7 +517,7 @@ public strictfp class Communications {
         if (((val > 4096))) {
             archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
             d = current.distanceSquaredTo(archonLoc);
-            if (d < dist) {
+            if (d < dist && !archonLoc.equals(current)) {
                 closest = archonLoc;
                 dist = d;
             }
@@ -502,7 +526,7 @@ public strictfp class Communications {
         if (((val > 4096))) {
             archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
             d = current.distanceSquaredTo(archonLoc);
-            if (d < dist) {
+            if (d < dist && !archonLoc.equals(current)) {
                 closest = archonLoc;
                 dist = d;
             }
@@ -511,7 +535,7 @@ public strictfp class Communications {
         if (((val > 4096))) {
             archonLoc = new MapLocation((((val / 64) % 64)), ((val % 64)));
             d = current.distanceSquaredTo(archonLoc);
-            if (d < dist) {
+            if (d < dist && !archonLoc.equals(current)) {
                 closest = archonLoc;
                 dist = d;
             }
@@ -584,6 +608,19 @@ public strictfp class Communications {
         if (((val > 4096)) && (((val & 8192) > 0))) numArchons++;
         return numArchons;
     }
+    public static int numPortableOrThreatenedArchons(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        int numArchons = 0;
+        int val = array[ARCHON_DATA_START];
+        if (((val > 4096)) && ((((val & 16384) > 0)) || (((val & 8192) > 0)))) numArchons++;
+        val = array[ARCHON_DATA_START+1];
+        if (((val > 4096)) && ((((val & 16384) > 0)) || (((val & 8192) > 0)))) numArchons++;
+        val = array[ARCHON_DATA_START+2];
+        if (((val > 4096)) && ((((val & 16384) > 0)) || (((val & 8192) > 0)))) numArchons++;
+        val = array[ARCHON_DATA_START+3];
+        if (((val > 4096)) && ((((val & 16384) > 0)) || (((val & 8192) > 0)))) numArchons++;
+        return numArchons;
+    }
     public static void markExplore(RobotController rc, MapLocation loc) throws GameActionException {
         updateArray(rc);
         int i = (loc.x/8) * 8 + (loc.y/8);
@@ -636,5 +673,16 @@ public strictfp class Communications {
         v++;
         array[LAB_TARGET_INDEX] = v;
         rc.writeSharedArray(LAB_TARGET_INDEX, v);
+    }
+    public static void writeArchonActivate(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        int n = rc.getRoundNum();
+        array[ARCHON_ACTIVATE_INDEX] = n;
+        rc.writeSharedArray(ARCHON_ACTIVATE_INDEX, n);
+    }
+    public static boolean shouldActivate(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        int n = rc.getRoundNum();
+        return (n != array[ARCHON_ACTIVATE_INDEX]);
     }
 }

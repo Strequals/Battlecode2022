@@ -18,12 +18,14 @@ public strictfp class MinerRobot extends Robot {
     }
 
     int leadMined;
+    MapLocation nearestArchon = null;
 
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
         updateExploration();
         Communications.markExplore(rc, rc.getLocation());
+        nearestArchon = Communications.getClosestArchon(rc);
 
         leadMined = 0;
         
@@ -164,6 +166,8 @@ public strictfp class MinerRobot extends Robot {
         }
         return mined;
     }
+
+    public static final int PRESERVE_RADIUS = 100;
     
     public boolean tryMineLead() throws GameActionException {
         MapLocation me = rc.getLocation();
@@ -172,7 +176,7 @@ public strictfp class MinerRobot extends Robot {
         int turnsCanMine = -StrictMath.floorDiv(rc.getActionCooldownTurns() - 10, (int) ((1.0 + rc.senseRubble(me) / 10.0) * 2.0));
 
         int leaveLead;
-        if (enemyLevel > 0) {
+        if (enemyLevel > 0 && nearestArchon != null && me.distanceSquaredTo(nearestArchon) >= PRESERVE_RADIUS) {
             leaveLead = 0;
         } else {
             leaveLead = 1;

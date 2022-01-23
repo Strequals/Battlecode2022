@@ -9,6 +9,7 @@ public strictfp class SoldierRobot extends Robot {
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_TARGET_THRESHOLD = 0.1;
     static final int GIVE_UP_RADIUS_SQUARED = 2;
+    static final int GO_ARCHON_ROUND = 100;
 
     public SoldierRobot(RobotController rc) {
         super(rc);
@@ -17,6 +18,11 @@ public strictfp class SoldierRobot extends Robot {
     public static final int ATTACK_DANGEROUS_RUBBLE = 25;
     public static final int HEAL_HEALTH = 10;
     public static final int MINER_BOOST = 10;
+
+    public static MapLocation spawnedArchonLoc;
+    public static boolean firstTurn = true;
+
+    static int goArchonSymmetry = 0; // 0 is diagonal, 1 is horizontal, 2 is vertical, 3 go random
 
     @Override
     public void run() throws GameActionException {
@@ -117,6 +123,10 @@ public strictfp class SoldierRobot extends Robot {
                     case ARCHON:
                         friendlyArchonNearby = true;
                         friendlyArchonPos = otherRobot.location;
+                        if (firstTurn) {
+                            spawnedArchonLoc = friendlyArchonPos;
+                            firstTurn = false;
+                        }
                         break;
                     case SOLDIER:
                     case WATCHTOWER:
@@ -308,8 +318,27 @@ public strictfp class SoldierRobot extends Robot {
         }
 
         if (targetLocation == null) {
-            targetLocation = getRandomLocation();
-            locationScore = 0.5;
+            if (rc.getRoundNum() < GO_ARCHON_ROUND) {
+                switch (goArchonSymmetry) {
+                    case 0:
+                        targetLocation = MapSymmetry.ROTATIONAL.reflect(rc, spawnedArchonLoc);
+                        break;
+                    case 1:
+                        targetLocation = MapSymmetry.HORIZONTAL.reflect(rc, spawnedArchonLoc);
+                        break;
+                    case 2:
+                        targetLocation = MapSymmetry.VERTICAL.reflect(rc, spawnedArchonLoc);
+                        break;
+                    default:
+                        targetLocation = getRandomLocation();
+                        break;
+                }
+                locationScore = 0.5;
+                goArchonSymmetry++;
+            } else {
+                targetLocation = getRandomLocation();
+                locationScore = 0.5;
+            }
         }
     }
 
