@@ -180,7 +180,7 @@ public strictfp class LaboratoryRobot extends Robot {
         if(rc.isMovementReady()) {
             if(fleeFrom != null) {
                 Direction d = Navigation.flee(rc, rc.getLocation(), fleeFrom);
-                if(rc.canMove(d)) {
+                if(d != null && rc.canMove(d)) {
                     rc.move(d);
                     return true;
                 }
