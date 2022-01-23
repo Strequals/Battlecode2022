@@ -100,15 +100,15 @@ public strictfp class ArchonRobot extends Robot {
 
         //rc.setIndicatorString("shouldBuild: " + shouldBuild() + "builders:" + Communications.getBuilderCount(rc) + "labs: " + Communications.getLabCount(rc) +  "exploring: " + exploring + "den: " + dangerousEnemiesNearby);
         //rc.setIndicatorString("portable archons: " + Communications.numPortableArchons(rc) + " port: " + portable);
-        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income average: " + incomeAverage + "income: " + Communications.getIncome(rc));
+        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income: " + Communications.getIncome(rc));
     }
 
     public void updateIncomeAverage() {
         incomeAverage = incomeAverageFactor * incomeAverage + (1 - incomeAverageFactor) * Communications.getIncome(rc);
     }
 
-    public boolean shouldBuild() {
-        boolean isWaitingForLab = Communications.getBuilderCount(rc) > 0 && Communications.getLabCount(rc) < LABS;
+    public boolean shouldBuild() throws GameActionException {
+        boolean isWaitingForLab = Communications.getBuilderCount(rc) > 0 && Communications.getLabCount(rc) < Communications.getTargetLabs(rc);
         return (!isWaitingForLab || rc.getTeamGoldAmount(rc.getTeam()) >= 20 || rc.getTeamLeadAmount(rc.getTeam()) >= 225);
     }
 
