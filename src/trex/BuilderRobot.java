@@ -126,7 +126,7 @@ public strictfp class BuilderRobot extends Robot {
         else {
             return tryBuild(RobotType.LABORATORY);
         }*/
-        if (Communications.getLabCount(rc) < ArchonRobot.LABS) {
+        if (Communications.getLabCount(rc) < Communications.getTargetLabs(rc)) {
             return tryBuild(RobotType.LABORATORY);
         } else if (rc.getTeamLeadAmount(rc.getTeam()) > WATCHTOWER_THRESHOLD) {
             return tryBuild(RobotType.WATCHTOWER);
@@ -304,7 +304,7 @@ public strictfp class BuilderRobot extends Robot {
         }*/
         
         if (targetLocation == null) {
-            if (Communications.getLabCount(rc) < ArchonRobot.LABS) {
+            if (Communications.getLabCount(rc) < Communications.getTargetLabs(rc)) {
                 targetLocation = findTargetCorner();
             } else {
                 targetLocation = getRandomLocation();

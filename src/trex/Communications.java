@@ -8,6 +8,7 @@ public strictfp class Communications {
     private static final int ALLIES_START = 16;
     private static final int ALLIES_NUM = 8;
     private static final int EXPLORE_START = 48;
+    private static final int LAB_TARGET_INDEX = 52;
     private static final int BUILDER_COUNT_INDEX = 53;
     private static final int LAB_COUNT_INDEX = 54;
     private static final int ARCHON_DATA_START = 55;
@@ -611,5 +612,21 @@ public strictfp class Communications {
         rc.writeSharedArray(EXPLORE_START + 2, 0);
         array[EXPLORE_START + 3] = 0;
         rc.writeSharedArray(EXPLORE_START + 3, 0);
+    }
+    public static int getTargetLabs(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        return array[LAB_TARGET_INDEX];
+    }
+    public static void setTargetLabs(RobotController rc, int val) throws GameActionException {
+        updateArray(rc);
+        array[LAB_TARGET_INDEX] = val;
+        rc.writeSharedArray(LAB_TARGET_INDEX, val);
+    }
+    public static void incrementTargetLabs(RobotController rc) throws GameActionException {
+        updateArray(rc);
+        int v = array[LAB_TARGET_INDEX];
+        v++;
+        array[LAB_TARGET_INDEX] = v;
+        rc.writeSharedArray(LAB_TARGET_INDEX, v);
     }
 }
