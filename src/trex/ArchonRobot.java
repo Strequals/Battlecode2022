@@ -150,6 +150,7 @@ public strictfp class ArchonRobot extends Robot {
         int income = leadTotal - previousLead;
         previousLead = leadTotal;
 
+        Communications.updateIncome(rc);
         Communications.correctIncome(rc, income);
     }
 
