@@ -21,6 +21,9 @@ public strictfp class ArchonRobot extends Robot {
 
     private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 1;
 
+    private static double incomeAverage = 0;
+    private static final double incomeAverageFactor = 0.8;
+
     int soldiersProduced;
 
     MapLocation allyLocation;
@@ -96,7 +99,12 @@ public strictfp class ArchonRobot extends Robot {
                 + rc.getTeamLeadAmount(rc.getTeam()));*/
 
         //rc.setIndicatorString("shouldBuild: " + shouldBuild() + "builders:" + Communications.getBuilderCount(rc) + "labs: " + Communications.getLabCount(rc) +  "exploring: " + exploring + "den: " + dangerousEnemiesNearby);
-        rc.setIndicatorString("portable archons: " + Communications.numPortableArchons(rc) + " port: " + portable);
+        //rc.setIndicatorString("portable archons: " + Communications.numPortableArchons(rc) + " port: " + portable);
+        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income average: " + incomeAverage + "income: " + Communications.getIncome(rc));
+    }
+
+    public void updateIncomeAverage() {
+        incomeAverage = incomeAverageFactor * incomeAverage + (1 - incomeAverageFactor) * Communications.getIncome(rc);
     }
 
     public boolean shouldBuild() {
@@ -119,6 +127,8 @@ public strictfp class ArchonRobot extends Robot {
         return isRepairableRobot() || rc.getTeamLeadAmount(rc.getTeam()) >= HIGH_LEAD * (1 + Communications.countHigherPriorityArchons(rc)) || (portableTurns > MAX_PORTABLE_TURNS && !enemiesNearby);
     }
 
+    public static final double TARGET_LABS_INCOME_RATIO = 2;
+
     public void tryActivate() throws GameActionException {
         if(activeArchon) {
             Communications.updateMinerCount(rc);
@@ -126,8 +136,16 @@ public strictfp class ArchonRobot extends Robot {
             Communications.updateLabCount(rc);
             Communications.updateBuilderCount(rc);
             updateIncome();
+            updateIncomeAverage();
             if (rc.getRoundNum() % 20 == 0) {
                 Communications.clearExplore(rc);
+            }
+
+            int labs = Communications.getTargetLabs(rc);
+            int target = (int) (incomeAverage / TARGET_LABS_INCOME_RATIO);
+            target = target < 1 ? 1 : target;
+            if (labs < target) {
+                Communications.setTargetLabs(rc, target);
             }
         }
         else {
