@@ -42,6 +42,8 @@ public strictfp class BuilderRobot extends Robot {
     RobotInfo[] nearbyRobots;
     boolean labNearby;
     boolean spottedByEnemy;
+    int nearbyAllies;
+    MapLocation nearestAlly;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
         MapLocation fleeFrom = null;
@@ -50,10 +52,19 @@ public strictfp class BuilderRobot extends Robot {
         labNearby = false;
         MapLocation current = rc.getLocation();
         spottedByEnemy = false;
+        nearbyAllies = 0;
+        int nearestAllyDist = Integer.MAX_VALUE;
+        int allyDist;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == rc.getTeam()) {
                 if (otherRobot.type == RobotType.LABORATORY) {
                     labNearby = true;
+                }
+                nearbyAllies++;
+                allyDist = current.distanceSquaredTo(otherRobot.location);
+                if (allyDist < nearestAllyDist) {
+                    nearestAlly = otherRobot.location;
+                    allyDist = nearestAllyDist;
                 }
             } else {
                 if (otherRobot.type.canAttack() && otherRobot.mode.canAct) {
@@ -126,7 +137,7 @@ public strictfp class BuilderRobot extends Robot {
         else {
             return tryBuild(RobotType.LABORATORY);
         }*/
-        if (Communications.getLabCount(rc) < Communications.getTargetLabs(rc)) {
+        if (shouldBuildLab()) {
             return tryBuild(RobotType.LABORATORY);
         } else if (rc.getTeamLeadAmount(rc.getTeam()) > WATCHTOWER_THRESHOLD) {
             return tryBuild(RobotType.WATCHTOWER);
@@ -135,16 +146,23 @@ public strictfp class BuilderRobot extends Robot {
         return false;
     }
 
+    public boolean shouldBuildLab() throws GameActionException {
+        return Communications.getLabCount(rc) < Communications.getTargetLabs(rc);
+    }
+
     public boolean shouldBuild() {
         //TODO: do not build if an archon is under attack
-        return true;
+        return !spottedByEnemy;
     }
+
+    public static final int MAX_ALLIES_BUILD_LAB = 1;
 
     public boolean tryBuild(RobotType type) throws GameActionException {
         if (!rc.isActionReady()) return false;
 
         if (type == RobotType.LABORATORY) {
-            if (spottedByEnemy) {
+            if (spottedByEnemy ||
+                    nearbyAllies > MAX_ALLIES_BUILD_LAB) {
                 return false;
             }
         }
@@ -233,7 +251,18 @@ public strictfp class BuilderRobot extends Robot {
 
     public boolean tryMove() throws GameActionException {
         if (!rc.isMovementReady()) return false;
+
         findTarget();
+
+        if (isBuildLocation && shouldBuildLab() && nearbyAllies > MAX_ALLIES_BUILD_LAB) {
+            Direction d = Navigation.flee(rc, rc.getLocation(), nearestAlly);
+            if (d != null && rc.canMove(d)) {
+                rc.move(d);
+                return true;
+            }
+        }
+
+
 
         MapLocation buildFrom = buildFrom();
 
@@ -259,7 +288,10 @@ public strictfp class BuilderRobot extends Robot {
         return false;
     }
 
+    boolean isBuildLocation;
+
     public void findTarget() throws GameActionException {
+        isBuildLocation = false;
         if (targetLocation != null) {
             if (rc.getLocation().isWithinDistanceSquared(targetLocation, 2)) {
                 targetLocation = null;
@@ -277,11 +309,19 @@ public strictfp class BuilderRobot extends Robot {
         
 
         if (shouldBuild()) {
-            MapLocation buildLocation = findBuildLocation();
-            if (buildLocation != null) {
-                targetLocation = buildLocation;
-                locationScore = 1;
-                return;
+            isBuildLocation = true;
+            if (shouldBuildLab() && nearbyAllies > MAX_ALLIES_BUILD_LAB) {
+                targetLocation = findTargetCorner();
+                if (targetLocation.distanceSquaredTo(rc.getLocation()) <= RobotType.BUILDER.actionRadiusSquared) {
+                    targetLocation = getRandomLocation();
+                }
+            } else {
+                MapLocation buildLocation = findBuildLocation();
+                if (buildLocation != null) {
+                    targetLocation = buildLocation;
+                    locationScore = 1;
+                    return;
+                }
             }
         }
 
@@ -297,6 +337,9 @@ public strictfp class BuilderRobot extends Robot {
         if (targetLocation == null) {
             if (Communications.getLabCount(rc) < Communications.getTargetLabs(rc)) {
                 targetLocation = findTargetCorner();
+                if (targetLocation.distanceSquaredTo(rc.getLocation()) <= RobotType.BUILDER.actionRadiusSquared) {
+                    targetLocation = getRandomLocation();
+                }
             } else {
                 targetLocation = getRandomLocation();
             }

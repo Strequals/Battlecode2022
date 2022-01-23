@@ -27,6 +27,7 @@ public strictfp class Navigation {
                     bfs = new BFSSoldier();
                     break;
                 case ARCHON:
+                case LABORATORY:
                 case WATCHTOWER:
                     bfs = new BFSWatchtower();
                     break;
