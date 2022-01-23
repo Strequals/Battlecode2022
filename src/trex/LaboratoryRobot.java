@@ -5,9 +5,8 @@ import battlecode.common.*;
 public strictfp class LaboratoryRobot extends Robot {
     private static final double MIN_LEAD = 0;
     private static final int TARGET_RATE = 3;  // will only transmute if rate is this or better
-    private static final int MOVE_THRESHOLD = 6;  // threshold for friendlies before lab attempts to move
-    private static final int STOP_THRESHOLD = 5;
     static final int MAX_IDLE_TURNS = 5;
+    static final int MAX_MOVING_TURNS = 20;
 
     private MapLocation targetCorner;
 
@@ -19,6 +18,7 @@ public strictfp class LaboratoryRobot extends Robot {
 
 
     private int idleTurns = 0;
+    private int movingTurns = 0;
     @Override
     public void run() throws GameActionException {
         processNearbyRobots();
@@ -35,8 +35,10 @@ public strictfp class LaboratoryRobot extends Robot {
             case PORTABLE:
                 if (shouldBecomeTurret() && rc.canTransform()) {
                     rc.transform();
+                    movingTurns = 0;
                 } else {
                     tryMove();
+                    movingTurns++;
                 }
         }
     }
@@ -50,11 +52,11 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean shouldBecomePortable() throws GameActionException {
-        return (friendlies > STOP_THRESHOLD) && !nearCorner() && idleTurns > MAX_IDLE_TURNS || !bestRubbleInArea();
+        return ((rc.getTransmutationRate() > TARGET_RATE) && idleTurns > MAX_IDLE_TURNS) || !bestRubbleInArea() || fleeFrom != null;
     }
 
     public boolean shouldBecomeTurret() throws GameActionException {
-        return (friendlies <= STOP_THRESHOLD || nearCorner()) && bestRubbleInArea();
+        return (rc.getTransmutationRate() <= TARGET_RATE || nearCorner()) && bestRubbleInArea();
     }
     
     public boolean bestRubbleInArea() throws GameActionException {
@@ -154,8 +156,36 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean tryMove() throws GameActionException {
+        if((idleTurns < MAX_IDLE_TURNS && nearCorner()) || movingTurns < MAX_MOVING_TURNS) {
+            if(rc.getRoundNum() % 2 == 0) {
+                if(targetCorner.x == 0) {
+                    targetCorner = new MapLocation(rc.getMapWidth() - 1, targetCorner.y);
+                }
+                else {
+                    targetCorner = new MapLocation(0, targetCorner.y);
+                }
+            }
+            else {
+                if(targetCorner.y == 0) {
+                    targetCorner = new MapLocation(targetCorner.x, rc.getMapHeight() - 1);
+                }
+                else {
+                    targetCorner = new MapLocation(targetCorner.x, 0);
+                }
+            }
+            idleTurns = 0;
+            movingTurns = 0;
+        }
+
         if(rc.isMovementReady()) {
-            if(!nearCorner() && !(friendlies < STOP_THRESHOLD)) {
+            if(fleeFrom != null) {
+                Direction d = Navigation.flee(rc, rc.getLocation(), fleeFrom);
+                if(rc.canMove(d)) {
+                    rc.move(d);
+                    return true;
+                }
+            }
+            else if(!nearCorner() && !(rc.getTransmutationRate() <= TARGET_RATE)) {
                 Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
                 if(rc.canMove(d)) {
                     rc.move(d);
