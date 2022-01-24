@@ -112,7 +112,9 @@ public strictfp class SageRobot extends Robot {
                     }
                 }
                 if(after != null) {
-                    moveDir = rc.getLocation().directionTo(after.loc);
+                    if (before == null || before.score <= after.score) {
+                        moveDir = rc.getLocation().directionTo(after.loc);
+                    }
                 }
             }*/
             after = tryAttack(myLoc.add(moveDir));
@@ -120,7 +122,7 @@ public strictfp class SageRobot extends Robot {
                 // Attack after = rc.isActionReady() ? tryAttack(rc.getLocation().add(moveDir)) : null;
                 if (before != null) {
                     if (after != null) {
-                        if (before.score >= after.score) {
+                        if (before.score > after.score) {
                             before.execute();
                             rc.move(moveDir);
                         } else {
