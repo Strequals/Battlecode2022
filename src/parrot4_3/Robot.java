@@ -1,4 +1,4 @@
-package trex;
+package parrot4_3;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -243,7 +243,7 @@ public strictfp abstract class Robot {
         
         MapLocation check;
 
-        double edgeFactor = - Math.max(rc.getRoundNum() / 200.0, 0.6);
+        double edgeFactor = 0.2 + Math.max(rc.getRoundNum() / 250.0, 0.4);
         double distanceLeeway = StrictMath.max(rc.getMapWidth() / 6.0, rc.getMapHeight() / 6.0);
 
         double distancePenalty;
@@ -257,7 +257,7 @@ public strictfp abstract class Robot {
             score = distancePenalty
                 + (exploration.hasExplored(x, y)? EXPLORED_PENALTY : 0)
                 + (Communications.checkExplore(rc, x, y)? CHECKED_PENALTY : 0)
-                + edgeFactor * StrictMath.sqrt(center.distanceSquaredTo(check));
+                - edgeFactor * StrictMath.sqrt(center.distanceSquaredTo(check));
             if (score < bestScore) {
                 best = check;
                 bestScore = score;
