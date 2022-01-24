@@ -15,7 +15,7 @@ public strictfp class ArchonRobot extends Robot {
     
     private int explorationMiners;
     private static final int BASE_MIN_MINER = 2;
-    private static final double MINER_RATIO = 0.002;
+    private static final double MINER_RATIO = 0.003;
 
     private static final double WEIGHT_DECAY = 0.5;
 
@@ -324,7 +324,7 @@ public strictfp class ArchonRobot extends Robot {
     private static final double MAX_RESOURCE_BONUS = 0.8;
     private static final double NOT_ENOUGH_MINERS_BONUS = 1;
     private static final double MAKE_SOLDIERS_THRESHOLD = 2;
-    private static final int MINERS_PER_LAB = 2;
+    public static final int MINERS_PER_LAB = 2;
 
     public void updateMinerWeight(double totalResources) throws GameActionException {
         double bonus = RESOURCE_WEIGHT * totalResources;

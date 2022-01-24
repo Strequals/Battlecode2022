@@ -174,6 +174,7 @@ public strictfp class SageRobot extends Robot {
     boolean friendlyArchonNearby;
     boolean enemyArchonNearby;
     boolean enemyMinerNearby;
+    boolean areAttackableDangerousEnemies;
     MapLocation nearestAlly;
     MapLocation nearestEnemy;
     MapLocation fleeFrom;
@@ -197,15 +198,17 @@ public strictfp class SageRobot extends Robot {
         int nearestEnemyDistance = Integer.MAX_VALUE;
         int dist;
         Team team = rc.getTeam();
+        MapLocation current = rc.getLocation();
         maxDamageTaken = 0;
         int dmg;
         allies = 0;
         isMinerNearby = false;
+        areAttackableDangerousEnemies = false;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == team) {
                 switch (otherRobot.type) {
                     case ARCHON:
-                        if (rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)) {
+                        if (current.isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)) {
                             friendlyArchonNearby = true;
                         }
                         friendlyArchonPos = otherRobot.location;
@@ -217,7 +220,7 @@ public strictfp class SageRobot extends Robot {
                     case SOLDIER:
                     case WATCHTOWER:
                     case SAGE:
-                        dist = rc.getLocation().distanceSquaredTo(otherRobot.location);
+                        dist = current.distanceSquaredTo(otherRobot.location);
                         if (dist < nearestAllyDistance) {
                             nearestAllyDistance = dist;
                             nearestAlly = otherRobot.location;
@@ -236,9 +239,9 @@ public strictfp class SageRobot extends Robot {
                     if (otherRobot.mode == RobotMode.TURRET) {
                         attackedFrom = otherRobot.location;
                     } else {
-                        attackedFrom = otherRobot.location.add(otherRobot.location.directionTo(rc.getLocation()));
+                        attackedFrom = otherRobot.location.add(otherRobot.location.directionTo(current));
                     }
-                    int dsq = attackedFrom.distanceSquaredTo(rc.getLocation());
+                    int dsq = attackedFrom.distanceSquaredTo(current);
                     if (dsq < fleeDistanceSquared) {
                         fleeDistanceSquared = dsq;
                         fleeFrom = attackedFrom;
@@ -247,7 +250,7 @@ public strictfp class SageRobot extends Robot {
                     dmg = otherRobot.type.getDamage(otherRobot.level);
                     if (dmg > 0) maxDamageTaken += dmg;
                 }
-                int otherDist = otherRobot.location.distanceSquaredTo(rc.getLocation());
+                int otherDist = otherRobot.location.distanceSquaredTo(current);
                 if (otherDist < nearestEnemyDistance) {
                     nearestEnemyDistance = otherDist;
                     nearestEnemy = otherRobot.location;
@@ -257,6 +260,9 @@ public strictfp class SageRobot extends Robot {
                     case SAGE:
                     case WATCHTOWER:
                         areDangerousEnemies = true;
+                        if (otherRobot.location.isWithinDistanceSquared(current, RobotType.SAGE.actionRadiusSquared)) {
+                            areAttackableDangerousEnemies = true;
+                        }
                         break;
                     case ARCHON:
                         enemyArchonNearby = true;
@@ -735,7 +741,8 @@ public strictfp class SageRobot extends Robot {
     public static final int MAX_RUBBLE_INCREASE = 10;
     public static final int TURNS_AVOID_RUBBLE = 6;
 
-    public static final int FLEE_WHEN_COOLDOWN_ABOVE = 20;
+    public static final int FLEE_WHEN_COOLDOWN_ABOVE = 10;
+    public static final int HEAL_WHEN_COOLDOWN_ABOVE = 30;
 
     public Direction tryMove() throws GameActionException {
         findTargets();
@@ -744,7 +751,7 @@ public strictfp class SageRobot extends Robot {
 
         if (!rc.isMovementReady()) return null;
 
-        if (!areEnemiesNearby && rc.getHealth() < HEAL_HEALTH && !friendlyArchonNearby) {
+        if (!areEnemiesNearby && rc.getHealth() < HEAL_HEALTH && !friendlyArchonNearby && rc.getActionCooldownTurns() >= HEAL_WHEN_COOLDOWN_ABOVE) {
             MapLocation nearestArchon = Communications.getClosestArchon(rc);
             if (nearestArchon != null) {
                 Direction d = Navigation.navigate(rc, rc.getLocation(), nearestArchon);
@@ -770,7 +777,7 @@ public strictfp class SageRobot extends Robot {
         }*/
 
         if (fleeFrom != null
-                && (rc.getActionCooldownTurns() >= FLEE_WHEN_COOLDOWN_ABOVE || !isAllyInRange(fleeFrom, fleeAttackRadius) || maxDamageTaken >= rc.getHealth())) {
+                && (!rc.isActionReady() || areAttackableDangerousEnemies) && (!isAllyInRange(fleeFrom, fleeAttackRadius) || maxDamageTaken >= rc.getHealth())) {
 
             Direction fleeDir = Navigation.flee(rc, current, fleeFrom);
             if (fleeDir != null) {
@@ -793,8 +800,6 @@ public strictfp class SageRobot extends Robot {
         int targetDistance = rc.getLocation().distanceSquaredTo(targetLocation);
 
         boolean engage = areEnemiesNearby && targetDistance > RobotType.SAGE.actionRadiusSquared;
-
-        
 
         if (nearestEnemy != null) {
             if (rc.isActionReady()) {
@@ -840,7 +845,9 @@ public strictfp class SageRobot extends Robot {
             }
         }
         
-        if (!areDangerousEnemies || current.distanceSquaredTo(targetLocation) > RobotType.SAGE.actionRadiusSquared) {
+        //int movementCooldownToTarget = (int) ((StrictMath.sqrt(current.distanceSquaredTo(targetLocation)) - RobotType.SAGE.actionRadiusSquared) * 25);
+
+        if (!areDangerousEnemies || (rc.isActionReady() && current.distanceSquaredTo(targetLocation) > RobotType.SAGE.actionRadiusSquared)) {
             Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
             if (d != null) {
                 MapLocation to = current.add(d);

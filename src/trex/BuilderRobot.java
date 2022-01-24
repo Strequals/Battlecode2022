@@ -280,20 +280,24 @@ public strictfp class BuilderRobot extends Robot {
             //locationScore *= SCORE_DECAY;
         }
 
+
+        MapLocation buildFrom = buildFrom();
+
         if (isBuildLocation && shouldBuildLab() && nearbyAllies > MAX_ALLIES_BUILD_LAB) {
-            Direction d = Navigation.flee(rc, rc.getLocation(), nearestAlly);
-            if (d != null && rc.canMove(d)) {
-                MapLocation next = current.add(d);
-                if (rc.senseRubble(next) - currentRubble <= MAX_RUBBLE_INCREASE) {
-                    rc.move(d);
-                    return true;
+            if (buildFrom == null || current.distanceSquaredTo(buildFrom) < RobotType.BUILDER.visionRadiusSquared) {
+                Direction d = Navigation.flee(rc, rc.getLocation(), nearestAlly);
+                if (d != null && rc.canMove(d)) {
+                    MapLocation next = current.add(d);
+                    if (rc.senseRubble(next) - currentRubble <= MAX_RUBBLE_INCREASE) {
+                        rc.move(d);
+                        return true;
+                    }
                 }
             }
         }
 
 
 
-        MapLocation buildFrom = buildFrom();
 
         if(buildFrom != null) {
             Direction d = null;

@@ -139,7 +139,8 @@ public strictfp class LaboratoryRobot extends Robot {
 
     public void tryTransmute() throws GameActionException {
         int lead = rc.getTeamLeadAmount(rc.getTeam());
-        if (Communications.getPrevMinerCount(rc) < WAIT_MINERS && Communications.numPortableOrThreatenedArchons(rc) < Communications.getArchonCount(rc)) {
+        int miners = Communications.getPrevMinerCount(rc);
+        if ((miners < WAIT_MINERS || miners < Communications.getLabCount(rc) * ArchonRobot.MINERS_PER_LAB) && Communications.numPortableOrThreatenedArchons(rc) < Communications.getArchonCount(rc)) {
             //let archon produce some miners
             // idleTurns++;
             rc.setIndicatorString("pmc" + Communications.getPrevMinerCount(rc) + "pota: " + Communications.numPortableOrThreatenedArchons(rc) + " ac: " + Communications.getArchonCount(rc));
