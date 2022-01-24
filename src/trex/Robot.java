@@ -718,7 +718,7 @@ public strictfp abstract class Robot {
 
     public Resource enemyScore(RobotInfo[] nearbyRobots) {
         MapLocation best = null;
-        int unitScore = Integer.MIN_VALUE;
+        int unitScore = 0;
         Team team = rc.getTeam();
         int score = 0;
         int s = 0;
@@ -786,7 +786,7 @@ public strictfp abstract class Robot {
         int dsq;
         MapLocation best = null;
         int bestDsq = Integer.MAX_VALUE;
-        int bestScore = Integer.MIN_VALUE;
+        int bestScore = 0;
         MapLocation current = rc.getLocation();
         int totalLead = 0;
         int totalGold = 0;

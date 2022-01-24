@@ -181,7 +181,7 @@ public strictfp class Communications {
     private static Resource readData(RobotController rc, int start, int num, double decay) throws GameActionException {
         updateArray(rc);
         MapLocation current = rc.getLocation();
-        int highestIndex = 0;
+        int highestIndex = start;
         double highestValue = 0;
         double v;
         int roundNum = rc.getRoundNum();
