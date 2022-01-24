@@ -1,4 +1,4 @@
-package trex;
+package parrot2;
 
 import battlecode.common.*;
 
@@ -30,7 +30,6 @@ public strictfp class LaboratoryRobot extends Robot {
                 if (shouldBecomePortable() && rc.canTransform()) {
                     rc.transform();
                 } else {
-                    rc.setIndicatorString("trying transmute");
                     tryTransmute();
                 }
                 break;
@@ -55,11 +54,11 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean shouldBecomePortable() throws GameActionException {
-        return ((rc.getTransmutationRate() > TARGET_RATE + 1) && idleTurns > MAX_IDLE_TURNS) || !bestRubbleInArea() || fleeFrom != null;
+        return ((rc.getTransmutationRate() > TARGET_RATE) && idleTurns > MAX_IDLE_TURNS) || !bestRubbleInArea() || fleeFrom != null;
     }
 
     public boolean shouldBecomeTurret() throws GameActionException {
-        return (rc.getTransmutationRate() <= TARGET_RATE || movingTurns > MAX_MOVING_TURNS) && bestRubbleInArea() && fleeFrom == null;
+        return (rc.getTransmutationRate() <= TARGET_RATE) && bestRubbleInArea() && fleeFrom == null;
     }
 
     MapLocation bestRubbleLoc;
@@ -139,10 +138,9 @@ public strictfp class LaboratoryRobot extends Robot {
 
     public void tryTransmute() throws GameActionException {
         int lead = rc.getTeamLeadAmount(rc.getTeam());
-        if (Communications.getPrevMinerCount(rc) < WAIT_MINERS && Communications.numPortableOrThreatenedArchons(rc) < Communications.getArchonCount(rc)) {
+        if (Communications.getPrevMinerCount(rc) < WAIT_MINERS && lead < 75 + TARGET_RATE) {
             //let archon produce some miners
             // idleTurns++;
-            rc.setIndicatorString("pmc" + Communications.getPrevMinerCount(rc) + "pota: " + Communications.numPortableOrThreatenedArchons(rc) + " ac: " + Communications.getArchonCount(rc));
             return;
         }
         if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= TARGET_RATE) {
@@ -208,6 +206,8 @@ public strictfp class LaboratoryRobot extends Robot {
             idleTurns = 0;
             movingTurns = 0;
         }
+
+        rc.setIndicatorString("targetCorner: " + targetCorner);
 
         if(rc.isMovementReady()) {
             if(fleeFrom != null) {

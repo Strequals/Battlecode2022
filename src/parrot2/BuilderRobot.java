@@ -1,4 +1,4 @@
-package trex;
+package parrot2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -45,7 +45,7 @@ public strictfp class BuilderRobot extends Robot {
                 turnsNotBuilt++;
             }
         }
-        //rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + " labs: " + Communications.getLabCount(rc));
+        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + " labs: " + Communications.getLabCount(rc));
     }
     
     RobotInfo[] nearbyRobots;
@@ -53,10 +53,9 @@ public strictfp class BuilderRobot extends Robot {
     boolean spottedByEnemy;
     int nearbyAllies;
     MapLocation nearestAlly;
-    MapLocation fleeFrom;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
-        fleeFrom = null;
+        MapLocation fleeFrom = null;
         int fleeDistanceSquared = Integer.MAX_VALUE;
         processAndBroadcastEnemies(nearbyRobots);
         labNearby = false;
@@ -96,7 +95,11 @@ public strictfp class BuilderRobot extends Robot {
             }
         }
 
-        
+        if (fleeFrom != null) {
+            tryFlee(fleeFrom);
+            targetLocation = null;
+            //locationScore *= SCORE_DECAY;
+        }
     }
 
     /*public void trySeed() throws GameActionException {
@@ -161,7 +164,7 @@ public strictfp class BuilderRobot extends Robot {
         return !spottedByEnemy || turnsNotBuilt > FORCE_BUILD_TURNS;
     }
 
-    public static final int MAX_ALLIES_BUILD_LAB = 3;
+    public static final int MAX_ALLIES_BUILD_LAB = 1;
 
     public boolean tryBuild(RobotType type) throws GameActionException {
         if (!rc.isActionReady()) return false;
@@ -252,42 +255,19 @@ public strictfp class BuilderRobot extends Robot {
                 }
             }
         }
-        rc.setIndicatorString("best : " + best);
         return best;
     }
-
-    final int MAX_RUBBLE_INCREASE = 10;
 
     public boolean tryMove() throws GameActionException {
         if (!rc.isMovementReady()) return false;
 
-
-
         findTarget();
-        MapLocation current = rc.getLocation();
-        int currentRubble = rc.senseRubble(current);
-
-        if (fleeFrom != null) {
-            targetLocation = null;
-            Direction d = Navigation.flee(rc, rc.getLocation(), fleeFrom);
-            if (d != null && rc.canMove(d)) {
-                MapLocation next = current.add(d);
-                if (rc.senseRubble(next) - currentRubble <= MAX_RUBBLE_INCREASE) {
-                    rc.move(d);
-                    return true;
-                }
-            }
-            //locationScore *= SCORE_DECAY;
-        }
 
         if (isBuildLocation && shouldBuildLab() && nearbyAllies > MAX_ALLIES_BUILD_LAB) {
             Direction d = Navigation.flee(rc, rc.getLocation(), nearestAlly);
             if (d != null && rc.canMove(d)) {
-                MapLocation next = current.add(d);
-                if (rc.senseRubble(next) - currentRubble <= MAX_RUBBLE_INCREASE) {
-                    rc.move(d);
-                    return true;
-                }
+                rc.move(d);
+                return true;
             }
         }
 

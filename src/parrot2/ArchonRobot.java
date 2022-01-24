@@ -1,4 +1,4 @@
-package trex;
+package parrot2;
 
 import battlecode.common.*;
 
@@ -14,20 +14,18 @@ public strictfp class ArchonRobot extends Robot {
     private int turnsIdled;
     
     private int explorationMiners;
-    private static final int BASE_MIN_MINER = 2;
+    private static final int BASE_MIN_MINER = 1;
     private static final double MINER_RATIO = 0.002;
 
     private static final double WEIGHT_DECAY = 0.5;
 
     private static final int PRODUCE_SOLDIERS_BEFORE_BUILDER = 1;
-    private static final int PRODUCE_MINERS_BEFORE_BUILDER = 2;
 
     private static double incomeAverage = 0;
     private static final double incomeAverageFactor = 0.95;
     private static boolean minerProducedBeforeLab = false;
 
     int soldiersProduced;
-    int minersProduced;
 
     MapLocation allyLocation;
 
@@ -51,7 +49,6 @@ public strictfp class ArchonRobot extends Robot {
         portableTurns = 0;
         turnsIdled = 0;
         soldiersProduced = 0;
-        minersProduced = 0;
         portable = false;
     }
 
@@ -136,7 +133,7 @@ public strictfp class ArchonRobot extends Robot {
     public final int TURNS_IDLE = 20;
     public static final int LOW_LEAD = 25;
     public boolean shouldBecomePortable() throws GameActionException {
-        return response == ThreatResponse.RUN || (turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1) && Communications.numPortableArchons(rc) == 0 && response != ThreatResponse.FIGHT);
+        return response == ThreatResponse.RUN || (turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1) && Communications.numPortableArchons(rc) == 0);
     }
 
     public static final int BECOME_TURRET_LEAD = 150;
@@ -148,8 +145,8 @@ public strictfp class ArchonRobot extends Robot {
         return response == ThreatResponse.FIGHT || isRepairableRobot() || rc.getTeamLeadAmount(rc.getTeam()) >= HIGH_LEAD * (1 + Communications.countHigherPriorityArchons(rc)) || (portableTurns > MAX_PORTABLE_TURNS && !enemiesNearby);
     }
 
-    public static final double TARGET_LABS_INCOME_RATIO = 2;
-    public static final double INCOME_SUB = 3;
+    public static final double TARGET_LABS_INCOME_RATIO = 3;
+    public static final double INCOME_SUB = 5;
 
     public void tryActivate() throws GameActionException {
         if(activeArchon) {
@@ -197,7 +194,7 @@ public strictfp class ArchonRobot extends Robot {
         Communications.updateIncome(rc);
     }
 
-    private static final double PANIC_SOLDIER_WEIGHT = 0.5;
+    private static final double PANIC_SOLDIER_WEIGHT = 1;
 
     RobotInfo[] nearbyRobots;
     MapLocation nearestEnemy;
@@ -208,7 +205,7 @@ public strictfp class ArchonRobot extends Robot {
     static final int SOLDIER_DANGER = 3;
     static final int SAGE_DANGER = 6;
     static final int WATCHTOWER_DANGER = 6;
-    static final int ARCHON_DANGER = 3;
+    static final int ARCHON_DANGER = 6;
     static int threatenedTurns = 0;
     public void processNearbyRobots() throws GameActionException {
         nearbyRobots = rc.senseNearbyRobots();
@@ -251,7 +248,6 @@ public strictfp class ArchonRobot extends Robot {
                         break;
                     case ARCHON:
                         danger += ARCHON_DANGER;
-                        dangerousEnemiesNearby = true;
                         break;
                 }
             }
@@ -265,8 +261,7 @@ public strictfp class ArchonRobot extends Robot {
             if (response == null) {
                 if (((incomeAverage * rc.getHealth()) / 75 > danger * danger
                             && Communications.numThreatenedArchons(rc) == 0)
-                        || Communications.getArchonCount(rc) < Communications.numPortableArchons(rc) + (portable? 0 : 1)
-                        || allies > 0) {
+                        || Communications.getArchonCount(rc) <= Communications.numPortableArchons(rc) + (portable? 0 : 1)) {
                     response = ThreatResponse.FIGHT;
                 } else {
                     response = ThreatResponse.RUN;
@@ -279,9 +274,6 @@ public strictfp class ArchonRobot extends Robot {
                         }
                         break;
                     case FIGHT:
-                        if (Communications.getArchonCount(rc) < Communications.numPortableArchons(rc) + 1 && danger * danger > (incomeAverage * rc.getHealth()) / 75 && allies == 0) {
-                            response = ThreatResponse.RUN;
-                        }
                         break;
                 }
             }
@@ -322,17 +314,15 @@ public strictfp class ArchonRobot extends Robot {
     private static final double RESOURCE_WEIGHT = 0.0001;
     private static final double BASE_MINER_WEIGHT = 0.4;
     private static final double MAX_RESOURCE_BONUS = 0.8;
-    private static final double NOT_ENOUGH_MINERS_BONUS = 1;
+    private static final double NOT_ENOUGH_MINERS_BONUS = 0.6;
     private static final double MAKE_SOLDIERS_THRESHOLD = 2;
-    private static final int MINERS_PER_LAB = 2;
 
     public void updateMinerWeight(double totalResources) throws GameActionException {
         double bonus = RESOURCE_WEIGHT * totalResources;
         if (bonus > MAX_RESOURCE_BONUS) {
             bonus = MAX_RESOURCE_BONUS;
         }
-        int numMiners = Communications.getCurrMinerCount(rc);
-        if (numMiners < explorationMiners || numMiners < MINERS_PER_LAB * Communications.getLabCount(rc)) {
+        if (Communications.getCurrMinerCount(rc) < explorationMiners) {
             bonus += NOT_ENOUGH_MINERS_BONUS;
         }
         minerWeight += BASE_MINER_WEIGHT + bonus;
@@ -340,7 +330,7 @@ public strictfp class ArchonRobot extends Robot {
 
     private static final double ENEMY_WEIGHT = 0.1;
     private static final double BASE_SOLDIER_WEIGHT = 1;
-    private static final double MAX_ENEMIES_BONUS = 0.5;
+    private static final double MAX_ENEMIES_BONUS = 1;
 
     public void updateSoldierWeight(double totalEnemies) throws GameActionException {
         double bonus = ENEMY_WEIGHT * totalEnemies;
@@ -355,7 +345,7 @@ public strictfp class ArchonRobot extends Robot {
     public static final int BUILDERS = 1;
     public static final int LABS = 1;
     public void updateBuilderWeight(double totalResources) throws GameActionException {
-        if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < Communications.getTargetLabs(rc) && minersProduced >= PRODUCE_MINERS_BEFORE_BUILDER) {
+        if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < Communications.getTargetLabs(rc) && soldiersProduced >= PRODUCE_SOLDIERS_BEFORE_BUILDER) {
             if (!dangerousEnemiesNearby || Communications.getArchonCount(rc) <= Communications.numPortableOrThreatenedArchons(rc))
             builderWeight += BASE_BUILDER_WEIGHT;
         } else {
@@ -364,7 +354,7 @@ public strictfp class ArchonRobot extends Robot {
     }
     
     public static final int MOST_EXPENSIVE_UNIT_PRICE_LEAD = 75;
-    static final int MAX_HOLD_TURNS = 40;
+    static final int MAX_HOLD_TURNS = 25;
     public boolean tryBuild() throws GameActionException {
         calculateShouldBuildLead();
 
@@ -397,7 +387,7 @@ public strictfp class ArchonRobot extends Robot {
         }
 
         if (response == ThreatResponse.FIGHT) {
-            if (allies == 0 && rc.getTeamLeadAmount(rc.getTeam()) < DEFEND_LEAD && threatenedTurns < MAX_HOLD_TURNS && rc.getHealth() > 90) {
+            if (allies == 0 && rc.getTeamLeadAmount(rc.getTeam()) < DEFEND_LEAD && threatenedTurns < MAX_HOLD_TURNS && rc.getHealth() > 10) {
                 Communications.incrementArchonPriority(rc);
                 return false;
             }
@@ -449,8 +439,6 @@ public strictfp class ArchonRobot extends Robot {
                 case MINER:
                     minerWeight *= WEIGHT_DECAY;
                     minerProducedBeforeLab = true;
-                    minersProduced++;
-                    Communications.incrementMinerCount(rc);
                     break;
                 case SOLDIER:
                     soldierWeight *= WEIGHT_DECAY;
@@ -458,7 +446,6 @@ public strictfp class ArchonRobot extends Robot {
                     break;
                 case BUILDER:
                     builderWeight *= WEIGHT_DECAY;
-                    Communications.incrementBuilderCount(rc);
                     break;
                 case SAGE:
                     soldierWeight *= WEIGHT_DECAY;
