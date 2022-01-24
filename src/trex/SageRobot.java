@@ -495,7 +495,7 @@ public strictfp class SageRobot extends Robot {
             RobotInfo r = rc.senseRobotAtLocation(t);
             if (r.type.canAttack()) {
                 targetLocation = t;
-                locationScore = 2.1;
+                locationScore = 2;
             } else if (locationScore < 1) {
                 targetLocation = t;
                 locationScore = 0.5;
@@ -507,7 +507,7 @@ public strictfp class SageRobot extends Robot {
             if (t != null) {
                 if (areDangerousEnemies) {
                     targetLocation = t;
-                    locationScore = 2.2;
+                    locationScore = 2;
                 } else if (locationScore < 1) {
                     targetLocation = t;
                     locationScore = 0.5;
@@ -522,7 +522,7 @@ public strictfp class SageRobot extends Robot {
                 if (r.value < 5) {
                     locationScore = 0.5;
                 } else {
-                    locationScore = 2.3;
+                    locationScore = 2;
                 }
                 return;
             }
