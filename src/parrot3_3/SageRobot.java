@@ -1,4 +1,4 @@
-package trex;
+package parrot3_3;
 
 import battlecode.common.*;
 
@@ -162,8 +162,8 @@ public strictfp class SageRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }
 
-        //rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
-        //rc.setIndicatorLine(rc.getLocation(), targetLocation, 255, 255, 0);
+        rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
+        rc.setIndicatorLine(rc.getLocation(), targetLocation, 255, 255, 0);
     }
 
     RobotInfo[] enemies;

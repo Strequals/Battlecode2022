@@ -83,7 +83,7 @@ public strictfp class SoldierRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }
 
-        rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
+        //rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
     }
 
     RobotInfo[] nearbyRobots;

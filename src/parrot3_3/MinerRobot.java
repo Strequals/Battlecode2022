@@ -1,4 +1,4 @@
-package trex;
+package parrot3_3;
 
 import battlecode.common.*;
 
@@ -6,7 +6,7 @@ public strictfp class MinerRobot extends Robot {
     
     MapLocation resourceLocation;
     MapLocation tabuLocation;
-    static final int TABU_RANGE = 20;
+    static final int TABU_RANGE = 34;
     double locationScore;
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_RESOURCE_THRESHOLD = 0.1;
@@ -39,7 +39,7 @@ public strictfp class MinerRobot extends Robot {
         }
         Communications.incrementMinerCount(rc);
         Communications.correctIncome(rc, leadMined);
-        //rc.setIndicatorString("target: " + resourceLocation + "score : " + locationScore);
+        rc.setIndicatorString("target: " + resourceLocation + "score : " + locationScore);
     }
     
 
@@ -354,6 +354,9 @@ public strictfp class MinerRobot extends Robot {
             }
         }
 
+        rc.setIndicatorString( " fleemem " + fleeMemory + " fleeFrom " + fleeFrom); 
+
+        
         if (resourceLocation == null) {
             r = Communications.readResourceData(rc);
             if (r != null && r.value > VALUE_THRESHOLD

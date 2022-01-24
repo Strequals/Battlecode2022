@@ -1,4 +1,4 @@
-package trex;
+package parrot3_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -219,9 +219,9 @@ public strictfp abstract class Robot {
         exploration.explore(rc, rc.getLocation());
     }
 
-    static final double EXPLORED_PENALTY = 10000;
-    static final double CHECKED_PENALTY = 5000;
-    static final int TRIES = 8;
+    static final double EXPLORED_PENALTY = 20;
+    static final double CHECKED_PENALTY = 10;
+    static final int TRIES = 16;
     
     static Exploration exploration;
     public MapLocation getExploreLocation() throws GameActionException {
@@ -233,39 +233,28 @@ public strictfp abstract class Robot {
         int currx = current.x;
         int curry = current.y;
         
-        MapLocation best = null;
+        int bx = -1;
+        int by = -1;
         double bestScore = 1000000;
         double score;
-        MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
 
         int x;
         int y;
-        
-        MapLocation check;
-
-        double edgeFactor = 0.2 + Math.max(rc.getRoundNum() / 250.0, 0.4);
-        double distanceLeeway = StrictMath.max(rc.getMapWidth() / 6.0, rc.getMapHeight() / 6.0);
-
-        double distancePenalty;
 
         for (int i = TRIES; i--> 0;) {
             x = rng.nextInt(rc.getMapWidth());
             y = rng.nextInt(rc.getMapHeight());
-            check = new MapLocation(x, y);
-            distancePenalty = StrictMath.sqrt(current.distanceSquaredTo(check)) - distanceLeeway;
-            if (distancePenalty < 0) distancePenalty = 0;
-            score = distancePenalty
+            score = Math.sqrt((currx - x) * (currx - x) + (curry - y) * (curry - y))
                 + (exploration.hasExplored(x, y)? EXPLORED_PENALTY : 0)
-                + (Communications.checkExplore(rc, x, y)? CHECKED_PENALTY : 0)
-                - edgeFactor * StrictMath.sqrt(center.distanceSquaredTo(check));
+                + (Communications.checkExplore(rc, x, y)? CHECKED_PENALTY : 0);
             if (score < bestScore) {
-                best = check;
-                bestScore = score;
+                bx = x;
+                by = y;
             }
         }
 
-        if (best != null) {
-            return best;
+        if (bx >= 0) {
+            return new MapLocation(bx, by);
         } else {
             return getRandomLocation();
         }
@@ -806,26 +795,26 @@ public strictfp abstract class Robot {
             dsq = current.distanceSquaredTo(l);
             totalGold += gold;
             if (dsq < bestDsq
-                    || (dsq == bestDsq && 32 * gold > bestScore)) {
+                    || (dsq == bestDsq && gold > bestScore)) {
                 best = l;
                 bestDsq = dsq;
-                bestScore = gold * 32;
+                bestScore = gold;
             }
         }
 
-        //if (best == null) {
-        for (MapLocation l : rc.senseNearbyLocationsWithLead(rc.getType().visionRadiusSquared)) {
-            lead = rc.senseLead(l) - 1;
-            dsq = current.distanceSquaredTo(l);
-            totalLead += lead;
-            if (lead > 0 && (dsq < bestDsq
-                    || (dsq == bestDsq && lead > bestScore))) {
-                best = l;
-                bestDsq = dsq;
-                bestScore = lead;
+        if (best == null) {
+            for (MapLocation l : rc.senseNearbyLocationsWithLead(rc.getType().visionRadiusSquared)) {
+                lead = rc.senseLead(l) - 1;
+                dsq = current.distanceSquaredTo(l);
+                totalLead += lead;
+                if (lead > 0 && (dsq < bestDsq
+                        || (dsq == bestDsq && lead > bestScore))) {
+                    best = l;
+                    bestDsq = dsq;
+                    bestScore = lead;
+                }
             }
         }
-        //}
         if (best != null) {
             return new Resource(best, totalLead, totalGold);
         }

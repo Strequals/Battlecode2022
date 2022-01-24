@@ -1,13 +1,12 @@
-package trex;
+package parrot3_2;
 
 import battlecode.common.*;
 
 public strictfp class LaboratoryRobot extends Robot {
     private static final double MIN_LEAD = 0;
-    private static int TARGET_RATE = 4;  // will only transmute if rate is this or better
+    private static int TARGET_RATE = 3;  // will only transmute if rate is this or better
     static final int MAX_IDLE_TURNS = 5;
     static final int MAX_MOVING_TURNS = 20;
-    static final int MAX_LABS_NEARBY = 5;
 
     private MapLocation targetCorner;
 
@@ -31,6 +30,7 @@ public strictfp class LaboratoryRobot extends Robot {
                 if (shouldBecomePortable() && rc.canTransform()) {
                     rc.transform();
                 } else {
+                    rc.setIndicatorString("trying transmute");
                     tryTransmute();
                 }
                 break;
@@ -55,7 +55,7 @@ public strictfp class LaboratoryRobot extends Robot {
     }
 
     public boolean shouldBecomePortable() throws GameActionException {
-        return ((rc.getTransmutationRate() > TARGET_RATE || nearbyLabs > MAX_LABS_NEARBY) && idleTurns > MAX_IDLE_TURNS) || !bestRubbleInArea() || fleeFrom != null;
+        return ((rc.getTransmutationRate() > TARGET_RATE + 1) && idleTurns > MAX_IDLE_TURNS) || !bestRubbleInArea() || fleeFrom != null;
     }
 
     public boolean shouldBecomeTurret() throws GameActionException {
@@ -92,8 +92,6 @@ public strictfp class LaboratoryRobot extends Robot {
     boolean spottedByEnemy = false;
     MapLocation fleeFrom;
     MapLocation nearestAlly;
-    int nearbyLabs; // labs that are in turret mode only
-    int labs;
     public void processNearbyRobots() throws GameActionException {
         Team team = rc.getTeam();
         nearbyRobots = rc.senseNearbyRobots();
@@ -104,8 +102,6 @@ public strictfp class LaboratoryRobot extends Robot {
         fleeFrom = null;
         int nearestAllyDist = Integer.MAX_VALUE;
         int allyDist;
-        nearbyLabs = 0;
-        labs = 0;
 
         processAndBroadcastEnemies(nearbyRobots);
 
@@ -116,12 +112,6 @@ public strictfp class LaboratoryRobot extends Robot {
                 if (allyDist < nearestAllyDist) {
                     nearestAlly = otherRobot.location;
                     nearestAllyDist = allyDist;
-                }
-                if (otherRobot.type == RobotType.LABORATORY) {
-                    if (otherRobot.mode == RobotMode.TURRET) {
-                        nearbyLabs++;
-                    }
-                    labs++;
                 }
             }
             else {
@@ -153,6 +143,7 @@ public strictfp class LaboratoryRobot extends Robot {
         if ((miners < WAIT_MINERS || miners < Communications.getLabCount(rc) * ArchonRobot.MINERS_PER_LAB) && Communications.numPortableOrThreatenedArchons(rc) < Communications.getArchonCount(rc)) {
             //let archon produce some miners
             // idleTurns++;
+            rc.setIndicatorString("pmc" + Communications.getPrevMinerCount(rc) + "pota: " + Communications.numPortableOrThreatenedArchons(rc) + " ac: " + Communications.getArchonCount(rc));
             return;
         }
         if(rc.canTransmute() && lead >= MIN_LEAD && rc.getTransmutationRate() <= TARGET_RATE) {
@@ -235,7 +226,7 @@ public strictfp class LaboratoryRobot extends Robot {
                 }
             }
             if (nearestAlly != null) {
-                if (!nearCorner() && labs < MAX_LABS_NEARBY) {
+                if (!nearCorner()) {
                     Direction d = Navigation.navigate(rc, rc.getLocation(), targetCorner);
                     if(d != null && rc.canMove(d)) {
                         rc.move(d);

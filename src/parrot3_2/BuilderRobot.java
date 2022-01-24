@@ -1,4 +1,4 @@
-package trex;
+package parrot3_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -263,6 +263,7 @@ public strictfp class BuilderRobot extends Robot {
 
 
 
+        findTarget();
         MapLocation current = rc.getLocation();
         int currentRubble = rc.senseRubble(current);
 
@@ -280,7 +281,6 @@ public strictfp class BuilderRobot extends Robot {
         }
 
 
-        findTarget();
         MapLocation buildFrom = buildFrom();
 
         if (isBuildLocation && shouldBuildLab() && nearbyAllies > MAX_ALLIES_BUILD_LAB) {

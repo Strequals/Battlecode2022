@@ -1,4 +1,4 @@
-package trex;
+package parrot3_2;
 
 import battlecode.common.*;
 
@@ -162,8 +162,8 @@ public strictfp class SageRobot extends Robot {
             locationScore *= SCORE_DECAY;
         }
 
-        //rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
-        //rc.setIndicatorLine(rc.getLocation(), targetLocation, 255, 255, 0);
+        rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
+        rc.setIndicatorLine(rc.getLocation(), targetLocation, 255, 255, 0);
     }
 
     RobotInfo[] enemies;
@@ -341,7 +341,7 @@ public strictfp class SageRobot extends Robot {
     final int BUILDER_DESTROY_BONUS = 5;
     final int SOLDIER_DESTROY_BONUS = 10;
     final int SAGE_DESTROY_BONUS = 10;
-    final int WATCHTOWER_DESTROY_BONUS = 15;
+    final int WATCHTOWER_DESTROY_BONUS = 10;
     final int LABORATORY_DESTROY_BONUS = 20;
     final int ARCHON_DESTROY_BONUS = 100;
     public Attack score(MapLocation loc) throws GameActionException {
@@ -392,26 +392,16 @@ public strictfp class SageRobot extends Robot {
         double bestScore = -1;
         MapLocation bestLoc = null;
         MapLocation myLoc = rc.getLocation();
-        //int bestHealth = 0;
-        //int bestDist = Integer.MAX_VALUE;
-        int dsq;
-        //int bestRubble = 101;
-        //int rubble;
-        double score;
 
         // it's ok if enemiesAtLoc is empty because min score is checked, and default score is 0
         for(RobotInfo enemy: enemiesAtLoc) {
-            score = (Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? destroyBonus(enemy.type) : 0)) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT);
-            dsq = enemy.location.distanceSquaredTo(myLoc);
-            //rubble = rc.senseRubble(enemy.location);
+            double score = (Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? destroyBonus(enemy.type) : 0)) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT);
             if(score > bestScore) {
                 bestScore = score;
                 bestLoc = enemy.getLocation();
-                //bestHealth = enemy.health;
-                //bestRubble = rubble;
             }
 
-            if(dsq <= enemy.type.actionRadiusSquared) {
+            if(myLoc.distanceSquaredTo(enemy.getLocation()) <= enemy.type.actionRadiusSquared) {
                 maxDamageTakenAtLoc += enemy.type.getDamage(enemy.getLevel());
             }
         }
@@ -476,24 +466,19 @@ public strictfp class SageRobot extends Robot {
         double score = 0;
         Team team = rc.getTeam();
         double damage;
-        double s;
         for(RobotInfo robot: nearbyRobots) {
             if(robot.getMode() == RobotMode.TURRET && robot.getLocation().distanceSquaredTo(loc) <= 25) {
                 damage = FURY_DAMAGE_PERCENT * robot.type.getMaxHealth(robot.level);
                 if(robot.team == team) {
-                    s = -damage * FRIENDLY_DAMAGE_MULT;
+                    score -= damage * FRIENDLY_DAMAGE_MULT;
                 }
                 else {
                     if (damage >= robot.health) {
-                        s = robot.health + destroyBonus(robot.type);
+                        score += robot.health + destroyBonus(robot.type);
                     } else {
-                        s = damage;
-                    }
-                    if (!robot.type.canAttack()) {
-                        s *= NON_DAMAGING_MULT;
+                        score += damage;
                     }
                 }
-                score += s;
             }
         }
         return new Attack(loc, AttackType.FURY, score / (1 + rubbleAtLoc / 10));

@@ -1,4 +1,4 @@
-package trex;
+package parrot3_3;
 
 import battlecode.common.*;
 
@@ -150,8 +150,6 @@ public strictfp class ArchonRobot extends Robot {
 
     public static final double TARGET_LABS_INCOME_RATIO = 2;
     public static final double INCOME_SUB = 3;
-    public static final int MINER_LAB_BOOST = 5;
-    public static final int MINER_LAB_START = 10;
 
     public void tryActivate() throws GameActionException {
         if(activeArchon) {
@@ -168,8 +166,6 @@ public strictfp class ArchonRobot extends Robot {
 
             int labs = Communications.getTargetLabs(rc);
             int target = (int) ((incomeAverage - INCOME_SUB) / TARGET_LABS_INCOME_RATIO);
-            //int minerBoost = (Communications.getPrevMinerCount(rc) - MINER_LAB_START) / MINER_LAB_BOOST;
-            //if (minerBoost > 0) target += minerBoost;
             target = target < 1 ? 1 : target;
             if (labs < target && minerProducedBeforeLab) {
                 Communications.incrementTargetLabs(rc);
@@ -325,7 +321,7 @@ public strictfp class ArchonRobot extends Robot {
 
     private static final double RESOURCE_WEIGHT = 0.0001;
     private static final double BASE_MINER_WEIGHT = 0.4;
-    private static final double MAX_RESOURCE_BONUS = 0.4;
+    private static final double MAX_RESOURCE_BONUS = 0.8;
     private static final double NOT_ENOUGH_MINERS_BONUS = 1;
     private static final double MAKE_SOLDIERS_THRESHOLD = 2;
     public static final int MINERS_PER_LAB = 2;
@@ -654,7 +650,7 @@ public strictfp class ArchonRobot extends Robot {
         if (response == ThreatResponse.RUN) {
             MapLocation nearestArchon = Communications.getClosestArchon(rc);
             if (nearestArchon != null) {
-                Direction d = Navigation.navigate(rc, rc.getLocation(), nearestArchon);
+                Direction d = Navigation.navigate(rc, rc.getLocation(), allyLocation);
                 if (d != null && rc.canMove(d)) {
                     rc.move(d);
                     return true;
