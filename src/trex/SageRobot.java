@@ -50,6 +50,7 @@ public strictfp class SageRobot extends Robot {
 
     MapLocation targetLocation;
     double locationScore;
+
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_TARGET_THRESHOLD = 0.1;
     static final double NON_DAMAGING_MULT = 0.33;  // multiplier to score for damaging a miner
@@ -59,6 +60,11 @@ public strictfp class SageRobot extends Robot {
     static final int FRIENDLY_DAMAGE_MULT = 1000;  // multiplier to penalty for damaging friendly buildings
     static final int MIN_SCORE = 20;
     static final boolean DENSITY_PREDICTION = false; 
+
+    static int goArchonSymmetry = 0; // 0 is diagonal, 1 is horizontal, 2 is vertical, 3 go random
+    public static MapLocation spawnedArchonLoc;
+    boolean firstTurn = true;
+    static final int GO_ARCHON_ROUND = 100;
 
     public SageRobot(RobotController rc) {
         super(rc);
@@ -157,6 +163,7 @@ public strictfp class SageRobot extends Robot {
         }
 
         //rc.setIndicatorString("target: " + targetLocation + ", score: " + locationScore + "tssde: " + turnsSinceSeenDangerousEnemy);
+        rc.setIndicatorLine(rc.getLocation(), targetLocation, 255, 255, 0);
     }
 
     RobotInfo[] enemies;
@@ -202,6 +209,10 @@ public strictfp class SageRobot extends Robot {
                             friendlyArchonNearby = true;
                         }
                         friendlyArchonPos = otherRobot.location;
+                        if (firstTurn) {
+                            spawnedArchonLoc = friendlyArchonPos;
+                            firstTurn = false;
+                        }
                         break;
                     case SOLDIER:
                     case WATCHTOWER:
@@ -518,8 +529,27 @@ public strictfp class SageRobot extends Robot {
         }
 
         if (targetLocation == null) {
-            targetLocation = getRandomLocation();
-            locationScore = 0.5;
+            if (rc.getRoundNum() < GO_ARCHON_ROUND) {
+                switch (goArchonSymmetry) {
+                    case 0:
+                        targetLocation = MapSymmetry.ROTATIONAL.reflect(rc, spawnedArchonLoc);
+                        break;
+                    case 1:
+                        targetLocation = MapSymmetry.HORIZONTAL.reflect(rc, spawnedArchonLoc);
+                        break;
+                    case 2:
+                        targetLocation = MapSymmetry.VERTICAL.reflect(rc, spawnedArchonLoc);
+                        break;
+                    default:
+                        targetLocation = getRandomLocation();
+                        break;
+                }
+                locationScore = 0.5;
+                goArchonSymmetry++;
+            } else {
+                targetLocation = getRandomLocation();
+                locationScore = 0.5;
+            }
         }
     }
 
