@@ -330,7 +330,7 @@ public strictfp class MinerRobot extends Robot {
      **/
 
     public void findResources() throws GameActionException {
-        Resource r = senseAllNearbyResources();
+        Resource r = previewAllNearbyResources();
         if (r != null) {
             Communications.addResourceData(rc, r.location, r.value);
             resourceValueSeen = r.value;
