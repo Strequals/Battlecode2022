@@ -29,12 +29,23 @@ public strictfp class MinerRobot extends Robot {
 
         leadMined = 0;
         
-        boolean mined = tryMine();
-        boolean moved = false;
-        if (moved = tryMove()) {
-            tryMine();
+        boolean mined = preview();
+        Direction moved = null;
+        MapLocation current = rc.getLocation();
+        int currentRubble = rc.senseRubble(current);
+        if ((moved = tryMove()) != null) {
+            int nextRubble = rc.senseRubble(current.add(moved));
+            if (nextRubble < currentRubble) {
+                mineDir(moved);
+            } else {
+                mine();
+            }
+            rc.move(moved);
+            mined = tryMine() || mined;
+        } else {
+            mine();
         }
-        if (!moved && !mined && rc.isMovementReady() && rc.isActionReady()) {
+        if ((moved == null) && !mined && rc.isMovementReady() && rc.isActionReady()) {
             locationScore *= SCORE_DECAY;
         }
         Communications.incrementMinerCount(rc);
@@ -255,9 +266,9 @@ public strictfp class MinerRobot extends Robot {
     /**
      * Looks for a suitable location to mine and tries to move there.
      **/
-    public boolean tryMove() throws GameActionException {
+    public Direction tryMove() throws GameActionException {
         findResources();
-        if (!rc.isMovementReady()) return false;
+        if (!rc.isMovementReady()) return null;
 
         if (fleeMemory > 0) {
             fleeMemory--;
@@ -267,8 +278,7 @@ public strictfp class MinerRobot extends Robot {
                 if (fleeDir != null) {
                     MapLocation fleeLoc = rc.getLocation().add(fleeDir);
                     if (rc.senseRubble(fleeLoc) - rc.senseRubble(rc.getLocation()) < MAX_FLEE_RUBBLE_INCREASE) {
-                        rc.move(fleeDir);
-                        return true;
+                        return fleeDir;
                     }
                 }
                 fleeing = true;
@@ -287,17 +297,15 @@ public strictfp class MinerRobot extends Robot {
                 d = rc.getLocation().directionTo(mineFrom);
             }
             if (d != null && rc.canMove(d)) {
-                rc.move(d);
-                return true;
+                return d;
             }
         } else {
             Direction d = Navigation.navigate(rc, rc.getLocation(), resourceLocation);
             if (d != null && rc.canMove(d)) {
-                rc.move(d);
-                return true;
+                return d;
             }
         }
-        return false;
+        return null;
     }
 
     public double getScoutProbability() {
@@ -372,6 +380,109 @@ public strictfp class MinerRobot extends Robot {
         }
     }
 
+    public Resource previewAllNearbyResources() throws GameActionException {
+        int lead;
+        int gold;
+        int dsq;
+        MapLocation best = null;
+        int bestDsq = Integer.MAX_VALUE;
+        int bestScore = 0;
+        MapLocation current = rc.getLocation();
+        int totalLead = 0;
+        int totalGold = 0;
+        for (MapLocation l : rc.senseNearbyLocationsWithGold(rc.getType().visionRadiusSquared)) {
+            gold = rc.senseGold(l);
+            dsq = current.distanceSquaredTo(l);
+            if (dsq <= 2) {
+                switch (current.directionTo(l)) {
+                    case CENTER:
+                        gold -= goldCenter;
+                        break;
+                    case NORTH:
+                        gold -= goldNorth;
+                        break;
+                    case NORTHEAST:
+                        gold -= goldNortheast;
+                        break;
+                    case EAST:
+                        gold -= goldEast;
+                        break;
+                    case SOUTHEAST:
+                        gold -= goldSoutheast;
+                        break;
+                    case SOUTH:
+                        gold -= goldSouth;
+                        break;
+                    case SOUTHWEST:
+                        gold -= goldSouthwest;
+                        break;
+                    case WEST:
+                        gold -= goldWest;
+                        break;
+                    case NORTHWEST:
+                        gold -= goldNortheast;
+                        break;
+                }
+            }
+            totalGold += gold;
+            if (dsq < bestDsq
+                    || (dsq == bestDsq && 32 * gold > bestScore)) {
+                best = l;
+                bestDsq = dsq;
+                bestScore = gold * 32;
+            }
+        }
+
+        //if (best == null) {
+        for (MapLocation l : rc.senseNearbyLocationsWithLead(rc.getType().visionRadiusSquared)) {
+            lead = rc.senseLead(l) - 1;
+            dsq = current.distanceSquaredTo(l);
+            if (dsq <= 2) {
+                switch (current.directionTo(l)) {
+                    case CENTER:
+                        lead -= leadCenter;
+                        break;
+                    case NORTH:
+                        lead -= leadNorth;
+                        break;
+                    case NORTHEAST:
+                        lead -= leadNortheast;
+                        break;
+                    case EAST:
+                        lead -= leadEast;
+                        break;
+                    case SOUTHEAST:
+                        lead -= leadSoutheast;
+                        break;
+                    case SOUTH:
+                        lead -= leadSouth;
+                        break;
+                    case SOUTHWEST:
+                        lead -= leadSouthwest;
+                        break;
+                    case WEST:
+                        lead -= leadWest;
+                        break;
+                    case NORTHWEST:
+                        lead -= leadNortheast;
+                        break;
+                }
+            }
+            totalLead += lead;
+            if (lead > 0 && (dsq < bestDsq
+                    || (dsq == bestDsq && lead > bestScore))) {
+                best = l;
+                bestDsq = dsq;
+                bestScore = lead;
+            }
+        }
+        //}
+        if (best != null) {
+            return new Resource(best, totalLead, totalGold);
+        }
+        return null;
+    }
+
     /**
      * Returns the nearest MapLocation with either Pb or Au, with ties broken by amount.
      * Returns null if no such location is found.
@@ -416,4 +527,1359 @@ public strictfp class MinerRobot extends Robot {
         }
         return null;
     }*/
+
+
+    static int leadCenter;
+    static int leadNorth;
+    static int leadNortheast;
+    static int leadEast;
+    static int leadSoutheast;
+    static int leadSouth;
+    static int leadSouthwest;
+    static int leadWest;
+    static int leadNorthwest;
+    static int goldCenter;
+    static int goldNorth;
+    static int goldNortheast;
+    static int goldEast;
+    static int goldSoutheast;
+    static int goldSouth;
+    static int goldSouthwest;
+    static int goldWest;
+    static int goldNorthwest;
+    public void mineDir(Direction dir) throws GameActionException {
+        MapLocation current = rc.getLocation();
+        MapLocation mineLocation;
+        switch (dir) {
+            case CENTER:
+                
+                break;
+            case NORTH:
+                mineLocation = current.add(Direction.SOUTHEAST);
+                switch (goldSoutheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSoutheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSoutheast;
+                mineLocation = current.add(Direction.SOUTH);
+                switch (goldSouth) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouth) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouth;
+                mineLocation = current.add(Direction.SOUTHWEST);
+                switch (goldSouthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouthwest;
+                break;
+            case NORTHEAST:
+                mineLocation = current.add(Direction.SOUTHEAST);
+                switch (goldSoutheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSoutheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSoutheast;
+                mineLocation = current.add(Direction.SOUTH);
+                switch (goldSouth) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouth) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouth;
+                mineLocation = current.add(Direction.SOUTHWEST);
+                switch (goldSouthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouthwest;
+                mineLocation = current.add(Direction.WEST);
+                switch (goldWest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadWest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadWest;
+                mineLocation = current.add(Direction.NORTHWEST);
+                switch (goldNorthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorthwest;
+                break;
+            case EAST:
+                mineLocation = current.add(Direction.SOUTHWEST);
+                switch (goldSouthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouthwest;
+                mineLocation = current.add(Direction.WEST);
+                switch (goldWest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadWest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadWest;
+                mineLocation = current.add(Direction.NORTHWEST);
+                switch (goldNorthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorthwest;
+                break;
+            case SOUTHEAST:
+                mineLocation = current.add(Direction.NORTH);
+                switch (goldNorth) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorth) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorth;
+                mineLocation = current.add(Direction.NORTHEAST);
+                switch (goldNortheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNortheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNortheast;
+                mineLocation = current.add(Direction.SOUTHWEST);
+                switch (goldSouthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouthwest;
+                mineLocation = current.add(Direction.WEST);
+                switch (goldWest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadWest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadWest;
+                mineLocation = current.add(Direction.NORTHWEST);
+                switch (goldNorthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorthwest;
+                break;
+            case SOUTH:
+                mineLocation = current.add(Direction.NORTH);
+                switch (goldNorth) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorth) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorth;
+                mineLocation = current.add(Direction.NORTHEAST);
+                switch (goldNortheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNortheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNortheast;
+                mineLocation = current.add(Direction.NORTHWEST);
+                switch (goldNorthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorthwest;
+                break;
+            case SOUTHWEST:
+                mineLocation = current.add(Direction.NORTH);
+                switch (goldNorth) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorth) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorth;
+                mineLocation = current.add(Direction.NORTHEAST);
+                switch (goldNortheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNortheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNortheast;
+                mineLocation = current.add(Direction.EAST);
+                switch (goldEast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadEast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadEast;
+                mineLocation = current.add(Direction.SOUTHEAST);
+                switch (goldSoutheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSoutheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSoutheast;
+                mineLocation = current.add(Direction.NORTHWEST);
+                switch (goldNorthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNorthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNorthwest;
+                break;
+            case WEST:
+                mineLocation = current.add(Direction.NORTHEAST);
+                switch (goldNortheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNortheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNortheast;
+                mineLocation = current.add(Direction.EAST);
+                switch (goldEast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadEast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadEast;
+                mineLocation = current.add(Direction.SOUTHEAST);
+                switch (goldSoutheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSoutheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSoutheast;
+                break;
+            case NORTHWEST:
+                mineLocation = current.add(Direction.NORTHEAST);
+                switch (goldNortheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadNortheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadNortheast;
+                mineLocation = current.add(Direction.EAST);
+                switch (goldEast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadEast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadEast;
+                mineLocation = current.add(Direction.SOUTHEAST);
+                switch (goldSoutheast) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSoutheast) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSoutheast;
+                mineLocation = current.add(Direction.SOUTH);
+                switch (goldSouth) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouth) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouth;
+                mineLocation = current.add(Direction.SOUTHWEST);
+                switch (goldSouthwest) {
+                    case 5:
+                        rc.mineGold(mineLocation);
+                    case 4:
+                        rc.mineGold(mineLocation);
+                    case 3:
+                        rc.mineGold(mineLocation);
+                    case 2:
+                        rc.mineGold(mineLocation);
+                    case 1:
+                        rc.mineGold(mineLocation);
+                }
+                switch (leadSouthwest) {
+                    case 5:
+                        rc.mineLead(mineLocation);
+                    case 4:
+                        rc.mineLead(mineLocation);
+                    case 3:
+                        rc.mineLead(mineLocation);
+                    case 2:
+                        rc.mineLead(mineLocation);
+                    case 1:
+                        rc.mineLead(mineLocation);
+                }
+                leadMined += leadSouthwest;
+                break;
+        }
+    }
+    public void mine() throws GameActionException {
+        MapLocation current = rc.getLocation();
+        MapLocation mineLocation;
+        mineLocation = current.add(Direction.CENTER);
+        switch (goldCenter) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadCenter) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadCenter;
+        mineLocation = current.add(Direction.NORTH);
+        switch (goldNorth) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadNorth) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadNorth;
+        mineLocation = current.add(Direction.NORTHEAST);
+        switch (goldNortheast) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadNortheast) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadNortheast;
+        mineLocation = current.add(Direction.EAST);
+        switch (goldEast) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadEast) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadEast;
+        mineLocation = current.add(Direction.SOUTHEAST);
+        switch (goldSoutheast) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadSoutheast) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadSoutheast;
+        mineLocation = current.add(Direction.SOUTH);
+        switch (goldSouth) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadSouth) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadSouth;
+        mineLocation = current.add(Direction.SOUTHWEST);
+        switch (goldSouthwest) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadSouthwest) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadSouthwest;
+        mineLocation = current.add(Direction.WEST);
+        switch (goldWest) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadWest) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadWest;
+        mineLocation = current.add(Direction.NORTHWEST);
+        switch (goldNorthwest) {
+            case 5:
+                rc.mineGold(mineLocation);
+            case 4:
+                rc.mineGold(mineLocation);
+            case 3:
+                rc.mineGold(mineLocation);
+            case 2:
+                rc.mineGold(mineLocation);
+            case 1:
+                rc.mineGold(mineLocation);
+        }
+        switch (leadNorthwest) {
+            case 5:
+                rc.mineLead(mineLocation);
+            case 4:
+                rc.mineLead(mineLocation);
+            case 3:
+                rc.mineLead(mineLocation);
+            case 2:
+                rc.mineLead(mineLocation);
+            case 1:
+                rc.mineLead(mineLocation);
+        }
+        leadMined += leadNorthwest;
+    }
+    public boolean preview() throws GameActionException {
+        boolean gold = previewGold();
+        return previewLead() || gold;
+    }
+    static int turnsCanMine;
+    public boolean previewGold() throws GameActionException {
+        MapLocation me = rc.getLocation();
+        boolean mined = false;
+        MapLocation mineLocation;
+        turnsCanMine = -StrictMath.floorDiv(rc.getActionCooldownTurns() - 10, (int) ((1.0 + rc.senseRubble(me) / 10.0) * 2.0));
+        mineLocation = me.add(Direction.CENTER);
+        if (rc.onTheMap(mineLocation)) {
+            goldCenter = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldCenter > 0) {
+                mined = true;
+                turnsCanMine -= goldCenter;
+            } else {
+                goldCenter = 0;
+            }
+        } else {
+            goldCenter = 0;
+        }
+        mineLocation = me.add(Direction.NORTH);
+        if (rc.onTheMap(mineLocation)) {
+            goldNorth = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldNorth > 0) {
+                mined = true;
+                turnsCanMine -= goldNorth;
+            } else {
+                goldNorth = 0;
+            }
+        } else {
+            goldNorth = 0;
+        }
+        mineLocation = me.add(Direction.NORTHEAST);
+        if (rc.onTheMap(mineLocation)) {
+            goldNortheast = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldNortheast > 0) {
+                mined = true;
+                turnsCanMine -= goldNortheast;
+            } else {
+                goldNortheast = 0;
+            }
+        } else {
+            goldNortheast = 0;
+        }
+        mineLocation = me.add(Direction.EAST);
+        if (rc.onTheMap(mineLocation)) {
+            goldEast = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldEast > 0) {
+                mined = true;
+                turnsCanMine -= goldEast;
+            } else {
+                goldEast = 0;
+            }
+        } else {
+            goldEast = 0;
+        }
+        mineLocation = me.add(Direction.SOUTHEAST);
+        if (rc.onTheMap(mineLocation)) {
+            goldSoutheast = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldSoutheast > 0) {
+                mined = true;
+                turnsCanMine -= goldSoutheast;
+            } else {
+                goldSoutheast = 0;
+            }
+        } else {
+            goldSoutheast = 0;
+        }
+        mineLocation = me.add(Direction.SOUTH);
+        if (rc.onTheMap(mineLocation)) {
+            goldSouth = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldSouth > 0) {
+                mined = true;
+                turnsCanMine -= goldSouth;
+            } else {
+                goldSouth = 0;
+            }
+        } else {
+            goldSouth = 0;
+        }
+        mineLocation = me.add(Direction.SOUTHWEST);
+        if (rc.onTheMap(mineLocation)) {
+            goldSouthwest = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldSouthwest > 0) {
+                mined = true;
+                turnsCanMine -= goldSouthwest;
+            } else {
+                goldSouthwest = 0;
+            }
+        } else {
+            goldSouthwest = 0;
+        }
+        mineLocation = me.add(Direction.WEST);
+        if (rc.onTheMap(mineLocation)) {
+            goldWest = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldWest > 0) {
+                mined = true;
+                turnsCanMine -= goldWest;
+            } else {
+                goldWest = 0;
+            }
+        } else {
+            goldWest = 0;
+        }
+        mineLocation = me.add(Direction.NORTHWEST);
+        if (rc.onTheMap(mineLocation)) {
+            goldNorthwest = StrictMath.min(turnsCanMine, rc.senseGold(mineLocation));
+            if (goldNorthwest > 0) {
+                mined = true;
+                turnsCanMine -= goldNorthwest;
+            } else {
+                goldNorthwest = 0;
+            }
+        } else {
+            goldNorthwest = 0;
+        }
+        return mined;
+    }
+    public boolean previewLead() throws GameActionException {
+        MapLocation me = rc.getLocation();
+        boolean mined = false;
+        MapLocation mineLocation;
+        int leaveLead;
+        if (enemyLevel > 0 && nearestArchon != null && me.distanceSquaredTo(nearestArchon) >= PRESERVE_RADIUS) {
+            leaveLead = 0;
+        } else {
+            leaveLead = 1;
+        }
+        mineLocation = me.add(Direction.CENTER);
+        if (rc.onTheMap(mineLocation)) {
+            leadCenter = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadCenter > 0) {
+                mined = true;
+                turnsCanMine -= leadCenter;
+            } else {
+                leadCenter = 0;
+            }
+        } else {
+            leadCenter = 0;
+        }
+        mineLocation = me.add(Direction.NORTH);
+        if (rc.onTheMap(mineLocation)) {
+            leadNorth = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadNorth > 0) {
+                mined = true;
+                turnsCanMine -= leadNorth;
+            } else {
+                leadNorth = 0;
+            }
+        } else {
+            leadNorth = 0;
+        }
+        mineLocation = me.add(Direction.NORTHEAST);
+        if (rc.onTheMap(mineLocation)) {
+            leadNortheast = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadNortheast > 0) {
+                mined = true;
+                turnsCanMine -= leadNortheast;
+            } else {
+                leadNortheast = 0;
+            }
+        } else {
+            leadNortheast = 0;
+        }
+        mineLocation = me.add(Direction.EAST);
+        if (rc.onTheMap(mineLocation)) {
+            leadEast = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadEast > 0) {
+                mined = true;
+                turnsCanMine -= leadEast;
+            } else {
+                leadEast = 0;
+            }
+        } else {
+            leadEast = 0;
+        }
+        mineLocation = me.add(Direction.SOUTHEAST);
+        if (rc.onTheMap(mineLocation)) {
+            leadSoutheast = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadSoutheast > 0) {
+                mined = true;
+                turnsCanMine -= leadSoutheast;
+            } else {
+                leadSoutheast = 0;
+            }
+        } else {
+            leadSoutheast = 0;
+        }
+        mineLocation = me.add(Direction.SOUTH);
+        if (rc.onTheMap(mineLocation)) {
+            leadSouth = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadSouth > 0) {
+                mined = true;
+                turnsCanMine -= leadSouth;
+            } else {
+                leadSouth = 0;
+            }
+        } else {
+            leadSouth = 0;
+        }
+        mineLocation = me.add(Direction.SOUTHWEST);
+        if (rc.onTheMap(mineLocation)) {
+            leadSouthwest = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadSouthwest > 0) {
+                mined = true;
+                turnsCanMine -= leadSouthwest;
+            } else {
+                leadSouthwest = 0;
+            }
+        } else {
+            leadSouthwest = 0;
+        }
+        mineLocation = me.add(Direction.WEST);
+        if (rc.onTheMap(mineLocation)) {
+            leadWest = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadWest > 0) {
+                mined = true;
+                turnsCanMine -= leadWest;
+            } else {
+                leadWest = 0;
+            }
+        } else {
+            leadWest = 0;
+        }
+        mineLocation = me.add(Direction.NORTHWEST);
+        if (rc.onTheMap(mineLocation)) {
+            leadNorthwest = StrictMath.min(turnsCanMine, rc.senseLead(mineLocation)- leaveLead);
+            if (leadNorthwest > 0) {
+                mined = true;
+                turnsCanMine -= leadNorthwest;
+            } else {
+                leadNorthwest = 0;
+            }
+        } else {
+            leadNorthwest = 0;
+        }
+        return mined;
+    }
 }
