@@ -58,7 +58,7 @@ public strictfp class SageRobot extends Robot {
     static final int GIVE_UP_RADIUS_SQUARED = 2;
     // static final int THREAT_THRESHOLD = 6;
     static final int FRIENDLY_DAMAGE_MULT = 1000;  // multiplier to penalty for damaging friendly buildings
-    static final int MIN_SCORE = 20;
+    static final int MIN_SCORE = 10;
     static final boolean DENSITY_PREDICTION = false; 
 
     static int goArchonSymmetry = 0; // 0 is diagonal, 1 is horizontal, 2 is vertical, 3 go random
@@ -411,7 +411,7 @@ public strictfp class SageRobot extends Robot {
 
         // it's ok if enemiesAtLoc is empty because min score is checked, and default score is 0
         for(RobotInfo enemy: enemiesAtLoc) {
-            score = (Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? destroyBonus(enemy.type) : 0)) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT);
+            score = (Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? destroyBonus(enemy.type) : 0)) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT) / (1 + rc.senseRubble(enemy.location) / 10);
             dsq = enemy.location.distanceSquaredTo(myLoc);
             //rubble = rc.senseRubble(enemy.location);
             if(score > bestScore) {
@@ -439,7 +439,7 @@ public strictfp class SageRobot extends Robot {
     }
     
     final double CHARGE_DAMAGE_PERCENT = 0.22;
-    public Attack scoreCharge(MapLocation loc) {
+    public Attack scoreCharge(MapLocation loc) throws GameActionException {
         MapLocation myLoc = rc.getLocation();
         //double score = (Math.abs(loc.x - myLoc.x) + Math.abs(loc.y - myLoc.y)) * enemyDensity * CHARGE_DAMAGE_PERCENT;
         double score = 0;
@@ -457,7 +457,7 @@ public strictfp class SageRobot extends Robot {
                     case SAGE:
                     case SOLDIER:
                         if(myLoc.distanceSquaredTo(enemy.getLocation()) <= 25) {
-                            score += enemy.health;
+                            score += enemy.health / (1 + rc.senseRubble(enemy.location) / 10);
                         }
                         break;
                 }
