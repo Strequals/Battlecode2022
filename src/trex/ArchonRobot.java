@@ -30,6 +30,7 @@ public strictfp class ArchonRobot extends Robot {
     int minersProduced;
 
     MapLocation allyLocation;
+    MapLocation targetLocation;
 
     boolean portable;
 
@@ -53,6 +54,7 @@ public strictfp class ArchonRobot extends Robot {
         soldiersProduced = 0;
         minersProduced = 0;
         portable = false;
+        targetLocation = rc.getLocation();
     }
 
     @Override
@@ -136,8 +138,22 @@ public strictfp class ArchonRobot extends Robot {
     public final int TURNS_IDLE = 20;
     public static final int LOW_LEAD = 25;
     public boolean shouldBecomePortable() throws GameActionException {
-        return response == ThreatResponse.RUN || (turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1) && Communications.numPortableArchons(rc) == 0 && response != ThreatResponse.FIGHT);
+        return /*(betterSpot() && Communications.numPortableArchons(rc) == 0 ) ||*/ response == ThreatResponse.RUN || (turnsIdled > TURNS_IDLE && rc.getTeamLeadAmount(rc.getTeam()) < LOW_LEAD * (Communications.countHigherPriorityArchons(rc) + 1) && Communications.numPortableArchons(rc) == 0 && response != ThreatResponse.FIGHT);
     }
+/*
+    public boolean betterSpot() throws GameActionException {
+        boolean toRet = false;
+        int currentRubble = rc.senseRubble(targetLocation);
+        int distance = 9999;
+        for(MapLocation loc: rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 25)) {
+            if(rc.senseRubble(loc) < currentRubble && rc.getLocation().distanceSquaredTo(loc) < distance) {
+                targetLocation = loc;
+                distance = rc.getLocation().distanceSquaredTo(loc);
+                toRet = true;
+            }
+        }
+        return toRet;
+    }*/
 
     public static final int BECOME_TURRET_LEAD = 150;
     public static final int MAX_PORTABLE_TURNS = 50;
@@ -673,6 +689,7 @@ public strictfp class ArchonRobot extends Robot {
     }
 
     public boolean tryMoveToLowerRubble() throws GameActionException {
+        
         Direction d;
         if (allyLocation != null) {
             d = getBiasedDirectionOfLeastRubble(rc.getLocation().directionTo(allyLocation));
@@ -689,6 +706,14 @@ public strictfp class ArchonRobot extends Robot {
             }
         }
         return false;
+        /*Direction d = Navigation.navigate(rc, rc.getLocation(), targetLocation);
+        if(d != null) {
+            if(rc.canMove(d)) {
+                rc.move(d);
+                return true;
+            }
+        }
+        return false;*/
     }
 
 

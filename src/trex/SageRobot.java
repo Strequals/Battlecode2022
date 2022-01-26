@@ -355,6 +355,10 @@ public strictfp class SageRobot extends Robot {
     final int WATCHTOWER_DESTROY_BONUS = 15;
     final int LABORATORY_DESTROY_BONUS = 20;
     final int ARCHON_DESTROY_BONUS = 100;
+
+    final int ENEMY_RUBBLE_REDUCT = 30;  // strongly recommend at least 10 for both
+    final int FRIENDLY_RUBBLE_REDUCT = 20;  // score is divided by 1 + (rubble / this)
+
     public Attack score(MapLocation loc) throws GameActionException {
         enemiesAtLoc = rc.senseNearbyRobots(loc, RobotType.SAGE.actionRadiusSquared, rc.getTeam().opponent());
         rubbleAtLoc = rc.senseRubble(loc);
@@ -411,7 +415,7 @@ public strictfp class SageRobot extends Robot {
 
         // it's ok if enemiesAtLoc is empty because min score is checked, and default score is 0
         for(RobotInfo enemy: enemiesAtLoc) {
-            score = (Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? destroyBonus(enemy.type) : 0)) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT) / (1 + rc.senseRubble(enemy.location) / 10);
+            score = (Math.min(enemy.getHealth(), 45) + (enemy.getHealth() <= 45 ? destroyBonus(enemy.type) : 0)) * (enemy.type.canAttack() ? 1 : NON_DAMAGING_MULT) / (1 + rc.senseRubble(enemy.location) / ENEMY_RUBBLE_REDUCT);
             dsq = enemy.location.distanceSquaredTo(myLoc);
             //rubble = rc.senseRubble(enemy.location);
             if(score > bestScore) {
@@ -426,12 +430,12 @@ public strictfp class SageRobot extends Robot {
             }
         }
 
-        return new Attack(bestLoc, AttackType.REGULAR, bestScore / (1 + rubbleAtLoc / 10));
+        return new Attack(bestLoc, AttackType.REGULAR, bestScore / (1 + rubbleAtLoc / FRIENDLY_RUBBLE_REDUCT));
     }
 
     public Attack scoreAbyss(MapLocation loc) {
         if(!friendlyArchonNearby && enemyMinerNearby && !isMinerNearby) {
-            return new Attack(loc, AttackType.ABYSS, leadWithinAction * 0.99 * LEAD_VALUE / (1 + rubbleAtLoc / 10));
+            return new Attack(loc, AttackType.ABYSS, leadWithinAction * 0.99 * LEAD_VALUE / (1 + rubbleAtLoc / FRIENDLY_RUBBLE_REDUCT));
         }
         else {
             return new Attack(null, null, 0);
@@ -451,13 +455,13 @@ public strictfp class SageRobot extends Robot {
                     case MINER:
                     case BUILDER:
                         if(myLoc.distanceSquaredTo(enemy.getLocation()) <= 25) {
-                            score += enemy.health * NON_DAMAGING_MULT;
+                            score += enemy.health * NON_DAMAGING_MULT / (1 + rc.senseRubble(enemy.location) / ENEMY_RUBBLE_REDUCT);
                         }
                         break;
                     case SAGE:
                     case SOLDIER:
                         if(myLoc.distanceSquaredTo(enemy.getLocation()) <= 25) {
-                            score += enemy.health / (1 + rc.senseRubble(enemy.location) / 10);
+                            score += enemy.health / (1 + rc.senseRubble(enemy.location) / ENEMY_RUBBLE_REDUCT);
                         }
                         break;
                 }
@@ -466,19 +470,19 @@ public strictfp class SageRobot extends Robot {
                     case MINER:
                     case BUILDER:
                         if(myLoc.distanceSquaredTo(enemy.getLocation()) <= 25) {
-                            score += damage * NON_DAMAGING_MULT;
+                            score += damage * NON_DAMAGING_MULT / (1 + rc.senseRubble(enemy.location) / ENEMY_RUBBLE_REDUCT);
                         }
                         break;
                     case SAGE:
                     case SOLDIER:
                         if(myLoc.distanceSquaredTo(enemy.getLocation()) <= 25) {
-                            score += damage;
+                            score += damage / (1 + rc.senseRubble(enemy.location) / ENEMY_RUBBLE_REDUCT);
                         }
                         break;
                 }
             }
         }
-        return new Attack(loc, AttackType.CHARGE, score / (1 + rubbleAtLoc / 10));
+        return new Attack(loc, AttackType.CHARGE, score / (1 + rubbleAtLoc / FRIENDLY_RUBBLE_REDUCT));
     }
     
     final double FURY_DAMAGE_PERCENT = 0.1;
@@ -506,7 +510,7 @@ public strictfp class SageRobot extends Robot {
                 score += s;
             }
         }
-        return new Attack(loc, AttackType.FURY, score / (1 + rubbleAtLoc / 10));
+        return new Attack(loc, AttackType.FURY, score / (1 + rubbleAtLoc / FRIENDLY_RUBBLE_REDUCT));
     }
 
     public static final double VALUE_THRESHOLD = 0.1;
