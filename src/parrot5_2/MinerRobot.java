@@ -1,4 +1,4 @@
-package trex;
+package parrot5_2;
 
 import battlecode.common.*;
 
@@ -625,33 +625,21 @@ public strictfp class MinerRobot extends Robot {
         }
 
         MapLocation best = null;
-        int bestDsq = Integer.MAX_VALUE;
         int bestRubble = 101;
         MapLocation current = rc.getLocation();
         if (!rc.canSenseRobotAtLocation(resourceLocation) || resourceLocation.equals(current)) {
             best = resourceLocation;
             bestRubble = rc.senseRubble(resourceLocation);
-            bestDsq = best.distanceSquaredTo(current);
         }
         MapLocation loc;
         int rubble;
-        int dsq;
         for (Direction d : directions) {
             loc = resourceLocation.add(d);
             if (loc.equals(current) || (rc.canSenseLocation(loc) && !rc.canSenseRobotAtLocation(loc))) {
                 rubble = rc.senseRubble(loc);
-                if (rubble <= bestRubble) {
-                    dsq = current.distanceSquaredTo(loc);
-
-                    if (rubble < bestRubble) {
-                        bestRubble = rubble;
-                        best = loc;
-                        bestDsq = dsq;
-                    } else if (dsq < bestDsq) {
-                        bestRubble = rubble;
-                        best = loc;
-                        bestDsq = dsq;
-                    }
+                if (rubble < bestRubble) {
+                    bestRubble = rubble;
+                    best = loc;
                 }
             }
         }
@@ -668,15 +656,13 @@ public strictfp class MinerRobot extends Robot {
         findResources();
         if (!rc.isMovementReady()) return null;
 
-        MapLocation current = rc.getLocation();
-
         if (fleeMemory > 0) {
             fleeMemory--;
             if (fleeing || resourceValueSeen < enemyThreat * (FLEE_HEALTH + rc.getHealth())) {
-                Direction fleeDir = Navigation.flee(rc, current, fleeFrom);
+                Direction fleeDir = Navigation.flee(rc, rc.getLocation(), fleeFrom);
                 locationScore *= FLEE_SCORE_DECAY;
                 if (fleeDir != null) {
-                    MapLocation fleeLoc = current.add(fleeDir);
+                    MapLocation fleeLoc = rc.getLocation().add(fleeDir);
                     if (rc.senseRubble(fleeLoc) - rc.senseRubble(rc.getLocation()) < MAX_FLEE_RUBBLE_INCREASE) {
                         return fleeDir;
                     }
@@ -689,25 +675,12 @@ public strictfp class MinerRobot extends Robot {
         }
 
         MapLocation mineFrom = mineFrom();
-
         if (mineFrom != null) {
             Direction d = null;
             if (rc.getLocation().distanceSquaredTo(mineFrom) > 2) {
-                d = Navigation.navigate(rc, current, mineFrom);
+                d = Navigation.navigate(rc, rc.getLocation(), mineFrom);
             } else if (!rc.getLocation().equals(mineFrom)) {
                 d = rc.getLocation().directionTo(mineFrom);
-            } else if (nearestArchon != null) {
-                int currentRubble = rc.senseRubble(current);
-                Direction preferred = nearestArchon.directionTo(current);
-                if (rc.getLocation().equals(resourceLocation)) {
-                    d = getBiasedDirectionOfLeastRubble(preferred);
-                } else {
-                    d = getBiasedDirectionOfLeastRubbleWithinDistanceSquaredOf(resourceLocation, 2, preferred);
-                }
-                MapLocation next = current.add(d);
-                if (rc.senseRubble(next) > currentRubble || diff(d, preferred) > 2) {
-                    d = null;
-                }
             }
             if (d != null && rc.canMove(d)) {
                 return d;

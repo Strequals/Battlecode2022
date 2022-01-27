@@ -1,4 +1,4 @@
-package trex;
+package parrot5_4;
 
 import battlecode.common.*;
 
@@ -134,7 +134,7 @@ public strictfp class ArchonRobot extends Robot {
         }
         if (response != ThreatResponse.FIGHT) {
             buildIfLeadOver += Communications.countHigherPriorityArchons(rc) * 75
-                + Communications.getLabCount(rc) * SAVE_LAB_LEAD;
+                /*+ Communications.getLabCount(rc) * SAVE_LAB_LEAD*/;
         }
     }
 
@@ -340,6 +340,8 @@ public strictfp class ArchonRobot extends Robot {
             } else {
                 exploring = false;
             }
+        } else {
+            exploring = false;
         }
         //rc.setIndicatorString("m: " + minerWeight + ", s: " + soldierWeight + ", b: " + builderWeight);
     }
@@ -381,8 +383,9 @@ public strictfp class ArchonRobot extends Robot {
     public static final int LABS = 1;
     public void updateBuilderWeight(double totalResources) throws GameActionException {
         if (Communications.getBuilderCount(rc) < BUILDERS && Communications.getLabCount(rc) < Communications.getTargetLabs(rc) && minersProduced >= PRODUCE_MINERS_BEFORE_BUILDER) {
-            if (!dangerousEnemiesNearby || Communications.getArchonCount(rc) <= Communications.numPortableOrThreatenedArchons(rc))
-            builderWeight += BASE_BUILDER_WEIGHT;
+            if (!dangerousEnemiesNearby || Communications.getArchonCount(rc) <= Communications.numPortableOrThreatenedArchons(rc)) {
+                builderWeight += BASE_BUILDER_WEIGHT;
+            }
         } else {
             builderWeight = 0;
         }

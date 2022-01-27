@@ -1,4 +1,4 @@
-package trex;
+package parrot5_4;
 
 import battlecode.common.*;
 

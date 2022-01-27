@@ -1,4 +1,4 @@
-package trex;
+package parrot5_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -21,7 +21,6 @@ public strictfp class Navigation {
                     bfs = new BFSMiner();
                     break;
                 case MINER:
-                case SAGE:
                 case SOLDIER:
                     bfs = new BFSSoldier();
                     break;

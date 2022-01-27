@@ -1,4 +1,4 @@
-package trex;
+package parrot5_5;
 
 import battlecode.common.*;
 import java.util.Random;
