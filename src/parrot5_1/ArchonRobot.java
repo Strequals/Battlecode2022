@@ -1,4 +1,4 @@
-package trex2;
+package parrot5_1;
 
 import battlecode.common.*;
 
@@ -123,7 +123,6 @@ public strictfp class ArchonRobot extends Robot {
     int buildIfLeadOver;
     public static int DEFEND_LEAD = 225;
     public static int MIN_TURN_SAVE_LEAD_FOR_DEFENSE = 10;
-    public static int SAVE_LAB_LEAD = 2;
     public void calculateShouldBuildLead() throws GameActionException {
         buildIfLeadOver = 0;
         boolean isWaitingForLab = Communications.getBuilderCount(rc) > 0 && Communications.getLabCount(rc) < Communications.getTargetLabs(rc);
@@ -133,8 +132,7 @@ public strictfp class ArchonRobot extends Robot {
             buildIfLeadOver += DEFEND_LEAD;
         }
         if (response != ThreatResponse.FIGHT) {
-            buildIfLeadOver += Communications.countHigherPriorityArchons(rc) * 75
-                + Communications.getLabCount(rc) * SAVE_LAB_LEAD;
+            buildIfLeadOver += Communications.countHigherPriorityArchons(rc) * 75;
         }
     }
 
@@ -148,12 +146,11 @@ public strictfp class ArchonRobot extends Robot {
     // it doesnt work :( 
     public boolean betterSpot() throws GameActionException {
         boolean toRet = false;
-        int minRubble = rc.senseRubble(targetLocation);
-        int distance = 0;
+        int currentRubble = rc.senseRubble(targetLocation);
+        int distance = 9999;
         for(MapLocation loc: rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 9)) {
             if(rc.senseRubble(loc) < currentRubble || (rc.senseRubble(loc) == currentRubble && rc.getLocation().distanceSquaredTo(loc) < distance)) {
                 targetLocation = loc;
-                minRubble = rc.senseRubble(loc);
                 distance = rc.getLocation().distanceSquaredTo(loc);
                 toRet = true;
             }
