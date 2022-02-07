@@ -1,4 +1,4 @@
-package trex2;
+package parrot5_1;
 
 import battlecode.common.*;
 
@@ -113,7 +113,7 @@ public strictfp class ArchonRobot extends Robot {
 
         //rc.setIndicatorString("shouldBuild: " + shouldBuild() + "builders:" + Communications.getBuilderCount(rc) + "labs: " + Communications.getLabCount(rc) +  "exploring: " + exploring + "den: " + dangerousEnemiesNearby);
         //rc.setIndicatorString("portable archons: " + Communications.numPortableArchons(rc) + " port: " + portable);
-        //rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income: " + Communications.getIncome(rc) + " threat: " + response + " bilo: " + buildIfLeadOver);
+        rc.setIndicatorString("target labs: " + Communications.getTargetLabs(rc) + "is active: " + activeArchon + "income: " + Communications.getIncome(rc) + " threat: " + response + " bilo: " + buildIfLeadOver);
     }
 
     public void updateIncomeAverage() throws GameActionException {
@@ -123,7 +123,6 @@ public strictfp class ArchonRobot extends Robot {
     int buildIfLeadOver;
     public static int DEFEND_LEAD = 225;
     public static int MIN_TURN_SAVE_LEAD_FOR_DEFENSE = 10;
-    public static int SAVE_LAB_LEAD = 2;
     public void calculateShouldBuildLead() throws GameActionException {
         buildIfLeadOver = 0;
         boolean isWaitingForLab = Communications.getBuilderCount(rc) > 0 && Communications.getLabCount(rc) < Communications.getTargetLabs(rc);
@@ -133,8 +132,7 @@ public strictfp class ArchonRobot extends Robot {
             buildIfLeadOver += DEFEND_LEAD;
         }
         if (response != ThreatResponse.FIGHT) {
-            buildIfLeadOver += Communications.countHigherPriorityArchons(rc) * 75
-                + Communications.getLabCount(rc) * SAVE_LAB_LEAD;
+            buildIfLeadOver += Communications.countHigherPriorityArchons(rc) * 75;
         }
     }
 
@@ -148,12 +146,11 @@ public strictfp class ArchonRobot extends Robot {
     // it doesnt work :( 
     public boolean betterSpot() throws GameActionException {
         boolean toRet = false;
-        int minRubble = rc.senseRubble(targetLocation);
-        int distance = 0;
+        int currentRubble = rc.senseRubble(targetLocation);
+        int distance = 9999;
         for(MapLocation loc: rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), 9)) {
             if(rc.senseRubble(loc) < currentRubble || (rc.senseRubble(loc) == currentRubble && rc.getLocation().distanceSquaredTo(loc) < distance)) {
                 targetLocation = loc;
-                minRubble = rc.senseRubble(loc);
                 distance = rc.getLocation().distanceSquaredTo(loc);
                 toRet = true;
             }
@@ -557,7 +554,11 @@ public strictfp class ArchonRobot extends Robot {
     public boolean tryRepair() throws GameActionException {
         if (!rc.isActionReady()) return false;
         MapLocation repairable = null;
-        repairable = identifyRepairableRobot();
+        if (dangerousEnemiesNearby) {
+            repairable = identifyRepairableRobotWhileUnderAttack();
+        } else {
+            repairable = identifyRepairableRobot();
+        }
         if (repairable != null && rc.canRepair(repairable)) {
             rc.repair(repairable);
             return true;
@@ -588,19 +589,16 @@ public strictfp class ArchonRobot extends Robot {
 
     public MapLocation identifyRepairableRobot() throws GameActionException {
         MapLocation best = null;
-        int score = Integer.MIN_VALUE;
+        int health = Integer.MIN_VALUE;
+        boolean canAttack = false;
         Team team = rc.getTeam();
-        int health = 0;
-        int maxHealth;
-        //boolean isCritical = false;
-        int s = 0;
+        boolean isCritical = false;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.mode == RobotMode.DROID) {
-                maxHealth = otherRobot.type.getMaxHealth(1);
                 if (otherRobot.team == team
                         && rc.getLocation().isWithinDistanceSquared(otherRobot.location, RobotType.ARCHON.actionRadiusSquared)
-                        && otherRobot.health < maxHealth) {
-                    /*if (otherRobot.type.canAttack()
+                        && otherRobot.health < otherRobot.type.getMaxHealth(otherRobot.level)) {
+                    if (otherRobot.type.canAttack()
                             && otherRobot.mode.canAct) {
                         if (otherRobot.health > health && !isCritical) {
                             health = otherRobot.health;
@@ -617,26 +615,6 @@ public strictfp class ArchonRobot extends Robot {
                             health = otherRobot.health;
                             best = otherRobot.location;
                         }
-                    }*/
-                    
-                    switch (otherRobot.type) {
-                        case SOLDIER:
-                        case SAGE:
-                            s = 100 + (otherRobot.health + 44) % 45;
-                            break;
-                        case MINER:
-                        case BUILDER:
-                            s = -otherRobot.health;
-                    }
-                    
-                    if (s > score) {
-                        score = s;
-                        best = otherRobot.location;
-                        health = otherRobot.health;
-                    } else if (s == score && otherRobot.health > health) {
-                        score = s;
-                        best = otherRobot.location;
-                        health = otherRobot.health;
                     }
                 }
             }
