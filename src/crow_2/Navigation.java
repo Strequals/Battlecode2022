@@ -1,4 +1,4 @@
-package trex2;
+package crow_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -33,9 +33,9 @@ public strictfp class Navigation {
             }
         }
         if (bfs != null && Clock.getBytecodesLeft() >= 4000) {
-            //int before = Clock.getBytecodeNum();
+            int before = Clock.getBytecodeNum();
             Direction d = bfs.navigateBFS(rc, from, to);
-            //rc.setIndicatorString("bfs bytecodes: " + (Clock.getBytecodeNum() - before));
+            rc.setIndicatorString("bfs bytecodes: " + (Clock.getBytecodeNum() - before));
             if (d != null) {
                 return d;
             }

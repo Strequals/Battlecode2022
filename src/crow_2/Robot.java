@@ -1,4 +1,4 @@
-package trex2;
+package crow_2;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -375,37 +375,6 @@ public strictfp abstract class Robot {
         }
         return new MapLocation(cx, cy);*/
 
-    }
-
-    public MapLocation getEnemyArchonLocation(MapLocation current, MapLocation spawnedArchonLoc) throws GameActionException {
-        if (exploration == null) {
-            exploration = new ExplorationMiner(rc);
-        }
-
-        MapLocation eal = MapSymmetry.ROTATIONAL.reflect(rc, spawnedArchonLoc);
-
-        if (!exploration.hasExplored(eal)) {
-            return eal;
-        }
-
-        eal = MapSymmetry.HORIZONTAL.reflect(rc, spawnedArchonLoc);
-        MapLocation eal2 = MapSymmetry.VERTICAL.reflect(rc, spawnedArchonLoc);
-
-        if (eal.distanceSquaredTo(current) < eal2.distanceSquaredTo(current)) {
-            if (!exploration.hasExplored(eal)) {
-                return eal;
-            } else if (!exploration.hasExplored(eal2)) {
-                return eal2;
-            }
-        } else {
-            if (!exploration.hasExplored(eal2)) {
-                return eal2;
-            } else if (!exploration.hasExplored(eal)) {
-                return eal;
-            }
-        }
-
-        return null;
     }
 
     public Direction getDirectionOfLeastRubble() throws GameActionException {

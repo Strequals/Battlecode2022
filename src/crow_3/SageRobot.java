@@ -1,4 +1,4 @@
-package trex2;
+package crow_3;
 
 import battlecode.common.*;
 
@@ -796,7 +796,7 @@ public strictfp class SageRobot extends Robot {
                 }
             }
         }
-        boolean healing = friendlyArchonNearby && rc.getHealth() <= 90;
+        boolean healing = friendlyArchonNearby && rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel());
         /*if (healing) {
             Direction lowest = getDirectionOfLeastRubbleWithinDistanceSquaredOf(friendlyArchonPos, RobotType.ARCHON.actionRadiusSquared);
             if (lowest != null) {

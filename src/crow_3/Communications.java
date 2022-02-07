@@ -1,4 +1,4 @@
-package trex2;
+package crow_3;
 import battlecode.common.*;
 public strictfp class Communications {
     private static final int RESOURCE_START = 0;

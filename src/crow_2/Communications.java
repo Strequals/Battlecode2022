@@ -1,4 +1,4 @@
-package trex2;
+package crow_2;
 import battlecode.common.*;
 public strictfp class Communications {
     private static final int RESOURCE_START = 0;
@@ -195,23 +195,11 @@ public strictfp class Communications {
         }
         return new Resource(location(highestIndex), (int) ((((double) ((array[2 * highestIndex + 1] / 128))) * StrictMath.pow(decay, roundNum - ((2 * (array[2 * highestIndex] / 64) + (array[2 * highestIndex + 1] % 2)))))));
     }
-    private static boolean areData(RobotController rc, int start, int num, int threshold) throws GameActionException {
-        updateArray(rc);
-        for (int i = start + num - 1; i-- > start;) {
-            if (((array[2 * i + 1] / 128)) >= threshold) {
-                return true;
-            }
-        }
-        return false;
-    }
     public static Resource readResourceData(RobotController rc) throws GameActionException {
         return readData(rc, RESOURCE_START, RESOURCE_NUM, RESOURCE_DECAY_FACTOR);
     }
     public static Resource readEnemiesData(RobotController rc) throws GameActionException {
         return readData(rc, ENEMIES_START, ENEMIES_NUM, ENEMIES_DECAY_FACTOR);
-    }
-    public static boolean areEnemies(RobotController rc, int threshold) throws GameActionException {
-        return areData(rc, ENEMIES_START, ENEMIES_NUM, threshold);
     }
     public static Resource readAlliesData(RobotController rc) throws GameActionException {
         return readData(rc, ALLIES_START, ALLIES_NUM, ALLIES_DECAY_FACTOR);

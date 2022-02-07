@@ -1,4 +1,4 @@
-package trex2;
+package crow_3;
 
 import battlecode.common.*;
 import java.util.Random;

@@ -1,4 +1,4 @@
-package trex2;
+package crow_2;
 
 import battlecode.common.*;
 
@@ -11,15 +11,10 @@ public strictfp class MinerRobot extends Robot {
     static final double SCORE_DECAY = 0.8;
     static final double CHANGE_RESOURCE_THRESHOLD = 0.1;
     public final int FLEE_HEALTH = 10;
-    public static boolean firstTurn;
-    public static boolean shouldGoArchon;
-    static MapLocation spawnedArchonLoc;
 
     public MinerRobot(RobotController rc) {
         super(rc);
         resourceLocation = null;
-        firstTurn = true;
-        shouldGoArchon = true;
     }
 
     int leadMined;
@@ -29,7 +24,6 @@ public strictfp class MinerRobot extends Robot {
     public void run() throws GameActionException {
         processNearbyRobots();
         updateExploration();
-        updateShouldGoArchon();
         Communications.markExplore(rc, rc.getLocation());
         nearestArchon = Communications.getClosestArchon(rc);
 
@@ -61,33 +55,6 @@ public strictfp class MinerRobot extends Robot {
         //rc.setIndicatorString("target: " + resourceLocation + "score : " + locationScore);
     }
     
-    static final int MAX_ARCHON_MINERS = 4;
-    static final int MAX_ARCHON_ROUND = 50;
-    public void updateShouldGoArchon() throws GameActionException {
-        if (shouldGoArchon) {
-
-            if (enemyThreat > 0) {
-                shouldGoArchon = false;
-                return;
-            }
-
-            if (rc.getRoundNum() > MAX_ARCHON_ROUND) {
-                shouldGoArchon = false;
-                return;
-            }
-
-            if (Communications.getPrevMinerCount(rc) > MAX_ARCHON_MINERS) {
-                shouldGoArchon = false;
-                return;
-            }
-
-            if (Communications.areEnemies(rc, 2)) {
-                shouldGoArchon = false;
-                return;
-            }
-        }
-    }
-    
 
     RobotInfo[] nearbyRobots;
     int nearbyMiners;
@@ -107,14 +74,8 @@ public strictfp class MinerRobot extends Robot {
         enemyThreat = 0;
         for (RobotInfo otherRobot : nearbyRobots) {
             if (otherRobot.team == rc.getTeam()) {
-                switch (otherRobot.type) {
-                    case MINER:
-                        nearbyMiners++;
-                        break;
-                    case ARCHON:
-                        spawnedArchonLoc = otherRobot.location;
-                        firstTurn = false;
-                        break;
+                if (otherRobot.type == RobotType.MINER) {
+                    nearbyMiners++;
                 }
             } else {
                 if (otherRobot.type.canAttack() && otherRobot.mode.canAct) {
@@ -795,13 +756,6 @@ public strictfp class MinerRobot extends Robot {
                     resourceLocation = r.location;
                     locationScore = 2;
                     return;
-                }
-            }
-
-            if (spawnedArchonLoc != null && resourceLocation == null && shouldGoArchon) {
-                resourceLocation = getEnemyArchonLocation(rc.getLocation(), spawnedArchonLoc);
-                if (resourceLocation != null) {
-                    locationScore = 1;
                 }
             }
             

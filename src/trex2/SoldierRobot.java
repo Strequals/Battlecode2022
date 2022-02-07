@@ -557,7 +557,7 @@ public strictfp class SoldierRobot extends Robot {
                 }
             }
         }
-        boolean healing = friendlyArchonNearby && rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel());
+        boolean healing = friendlyArchonNearby && rc.getHealth() <= 45;
         /*if (healing) {
             Direction lowest = getDirectionOfLeastRubbleWithinDistanceSquaredOf(friendlyArchonPos, RobotType.ARCHON.actionRadiusSquared);
             if (lowest != null) {
